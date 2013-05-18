@@ -81,6 +81,7 @@ public class DeadlineGui extends JPanel {
 				tempGBC.gridy++;
 				tempPanel.add(tempCheckBox, tempGBC);
 				tempCheckBox.addItemListener(new ItemListener() {
+					@Override
 					public void itemStateChanged(ItemEvent aE) {
 						if (aE.getStateChange() == ItemEvent.SELECTED) {
 							tempDeadline.setDone(true);
@@ -110,6 +111,7 @@ public class DeadlineGui extends JPanel {
 		if (aE.getButton() == MouseEvent.BUTTON3) {
 			JPopupMenu tempJPopupMenu = new JPopupMenu();
 			tempJPopupMenu.add(new AbstractAction("Copy") {
+				@Override
 				public void actionPerformed(ActionEvent aE) {
 					Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
 							new StringSelection(tempCheckBox.getText()), null);

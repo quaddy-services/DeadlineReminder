@@ -18,7 +18,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -40,6 +39,7 @@ public class DeadlineReminder {
 	public static void main(String[] args) {
 		updateLogger();
 		EventQueue.invokeLater(new Runnable() {
+			@Override
 			public void run() {
 				DeadlineReminder tempDeadlineReminder = new DeadlineReminder();
 				tempDeadlineReminder.mainEventQueue();
@@ -65,7 +65,7 @@ public class DeadlineReminder {
 	private Model model;
 	private Logger LOGGER = Logger.getLogger("DeadlineReminder");
 	private GoogleSync googleSync = new GoogleSync();
-	
+
 	protected void mainEventQueue() {
 		try {
 			LOGGER.log(Level.INFO, "Start");
@@ -83,7 +83,7 @@ public class DeadlineReminder {
 			int h = d.height * 85 / 100;
 			tempFrame.setSize(w, h);
 			tempFrame.setLocation((d.width - w) / 2, (d.height - h) / 3);
-			tempFrame.setAlwaysOnTop(true);
+			tempFrame.setAlwaysOnTop(false);
 			tempFrame.getContentPane().add(tempGUI);
 
 			tempFrame.setVisible(true);
@@ -93,6 +93,7 @@ public class DeadlineReminder {
 				public void windowClosing(WindowEvent aE) {
 					super.windowClosing(aE);
 					EventQueue.invokeLater(new Runnable() {
+						@Override
 						public void run() {
 							exit();
 						}
@@ -103,6 +104,7 @@ public class DeadlineReminder {
 			int tempDelay = 600 * 1000;
 			// tempDelay = 10 * 1000;
 			tempTimer = new Timer(tempDelay, new ActionListener() {
+				@Override
 				public void actionPerformed(ActionEvent aE) {
 					every10Minutes(tempFrame);
 				}
@@ -167,7 +169,7 @@ public class DeadlineReminder {
 
 	private int lastSyncHour = 0;
 	private int lastSyncSize = 0;
-	
+
 	private void every10Minutes(JFrame aFrame) {
 		try {
 			LOGGER.log(Level.FINER, new Date() + ":Check");
@@ -183,16 +185,16 @@ public class DeadlineReminder {
 				saveModel();
 			}
 			model = createModel();
-			
+
 			Calendar tempCal = Calendar.getInstance();
 			int tempHour = tempCal.get(Calendar.HOUR_OF_DAY);
-			if (tempDoneAvailable || tempHour < lastSyncHour || model.getOpenDeadlines().size()!=lastSyncSize) {
+			if (tempDoneAvailable || tempHour < lastSyncHour || model.getOpenDeadlines().size() != lastSyncSize) {
 				// at least once a day.
 				googleSync.pushToGoogle(model.getOpenDeadlines());
 			}
 			lastSyncHour = tempHour;
 			lastSyncSize = model.getOpenDeadlines().size();
-			
+
 			DeadlineGui tempGUI = new DeadlineGui();
 			tempGUI.setModel(model);
 			Container tempContentPane = aFrame.getContentPane();
