@@ -37,28 +37,6 @@
 		</repository>
 	</repositories>
 	<build>
-		<sourceDirectory>src</sourceDirectory>
-		<testSourceDirectory>tests/src</testSourceDirectory>
-		<resources>
-			<resource>
-				<directory>${basedir}/src</directory>
-				<includes>
-					<include>**/*.jpg</include>
-					<include>**/*.gif</include>
-					<include>**/*.txt</include>
-					<include>**/*.bmp</include>
-					<include>**/*.json</include>
-				</includes>
-			</resource>
-		</resources>
-		<testResources>
-			<testResource>
-				<directory>${basedir}/tests/src</directory>
-				<includes>
-					<include>**/*.txt</include>
-				</includes>
-			</testResource>
-		</testResources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -87,13 +65,6 @@
 					</execution>
 				</executions>
 				<configuration>
-
-					<dependencies>
-						<excludes>
-							<exclude>commons-lang:commons-lang</exclude>
-						</excludes>
-					</dependencies>
-
 					<jnlp>
 						<!--
 							we play with the resource path and template relative path to test
