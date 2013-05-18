@@ -1,0 +1,6 @@
+---- Enter your deadlines here
+---- Format: dd.mm.yyyy Text
+---- Repeating with *: dd.mm.yyyy*Text
+
+01.01.2018 One Deadline
+01.03.2005*Reapeating Deadline 1
