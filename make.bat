@@ -25,5 +25,5 @@ rem java -cp .;bin de.adr.html.DynamicHtml
 java -Djava.net.preferIPv4Stack=true -cp .;bin;lib\commons-net-1.4.1.jar;lib\jakarta-oro-2.0.8.jar de.adr.ftp.FtpUpdate
 popd .
 :noq
-rem cd ..
+rem call mvn clean 
 :ende
