@@ -15,6 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.googleapis.services.AbstractGoogleClientRequest;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -66,18 +67,19 @@ public class GoogleSync {
 					push(aOpenDeadlines);
 					LOGGER.info("Finished");
 				} catch (Exception e) {
-					LOGGER.log(Level.SEVERE, "Error", e);
+					LOGGER.log(Level.SEVERE, "Error on authenticatino", e);
 					String tempUserName = System.getProperty("user.name", "-");
-					if (new PersistentCredentialStore().delete(tempUserName)) {
-						// try again
-						try {
-							LOGGER.log(Level.INFO, "Again:Start");
-							push(aOpenDeadlines);
-							LOGGER.log(Level.INFO, "Again:Finished");
-						} catch (Exception e2) {
-							LOGGER.log(Level.SEVERE, "Again:Error", e2);
-						}
+					PersistentCredentialStore tempPersistentCredentialStore = new PersistentCredentialStore();
+					tempPersistentCredentialStore.delete(tempUserName);
+					// try again
+					try {
+						LOGGER.log(Level.INFO, "Again:Start");
+						push(aOpenDeadlines);
+						LOGGER.log(Level.INFO, "Again:Finished");
+					} catch (Exception e2) {
+						LOGGER.log(Level.SEVERE, "Again:Error", e2);
 					}
+
 				} finally {
 					t = null;
 				}
@@ -115,8 +117,8 @@ public class GoogleSync {
 		Credential credential = OAuth2Native.authorize(HTTP_TRANSPORT, JSON_FACTORY, new LocalServerReceiver(),
 				Arrays.asList(CalendarScopes.CALENDAR));
 		// set up global Calendar instance
-		com.google.api.services.calendar.Calendar client = com.google.api.services.calendar.Calendar
-				.builder(HTTP_TRANSPORT, JSON_FACTORY).setApplicationName("Google-DeadlineReminder/1.0")
+		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(
+				HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName("Google-DeadlineReminder/1.0")
 				.setHttpRequestInitializer(credential).build();
 
 		push(client, aOpenDeadlines);
@@ -124,7 +126,8 @@ public class GoogleSync {
 
 	private void push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines)
 			throws IOException {
-		CalendarList tempCalendarList = client.calendarList().list().execute();
+
+		CalendarList tempCalendarList = config(client.calendarList().list()).execute();
 		String tempDeadlineCalendarId = null;
 		if (tempCalendarList.getItems() != null) {
 			for (CalendarListEntry tempEntry : tempCalendarList.getItems()) {
@@ -159,26 +162,35 @@ public class GoogleSync {
 		}
 		for (Event tempEvent : tempCurrentEvents) {
 			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
-			tempDelete.execute();
+			config(tempDelete).execute();
 			LOGGER.log(Level.INFO, "Deleted " + tempEvent.getSummary() + " " + tempEvent);
 		}
 		for (Event tempEvent : tempNewEvents) {
-			Event tempResult = client.events().insert(tempDeadlineCalendarId, tempEvent).execute();
+			Event tempResult = config(client.events().insert(tempDeadlineCalendarId, tempEvent)).execute();
 			LOGGER.log(Level.INFO, "Added " + tempEvent.getSummary() + " " + tempResult);
 		}
 	}
 
 	private boolean isSame(Event aEvent, Event aNewEvent) {
 		if (aEvent.getSummary().equals(aNewEvent.getSummary())) {
-			DateTime tempDT1 = aEvent.getStart().getDateTime();
-			DateTime tempDT2 = aNewEvent.getStart().getDateTime();
+			EventDateTime tempOldStart = aEvent.getStart();
+			DateTime tempDT1 = tempOldStart.getDateTime();
+			EventDateTime tempNewStart = aNewEvent.getStart();
+			DateTime tempDT2 = tempNewStart.getDateTime();
 			if (tempDT1 != null && tempDT2 != null && tempDT1.equals(tempDT2)) {
 				return true;
 			}
-			String tempD1 = aEvent.getStart().getDate();
-			String tempD2 = aNewEvent.getStart().getDate();
-			if (tempD1 != null && tempD2 != null && tempD1.equals(tempD2)) {
+			DateTime tempOldStartDate = tempOldStart.getDate();
+			DateTime tempNewStartDate = tempNewStart.getDate();
+			if (tempOldStartDate == null && tempNewStartDate == null) {
 				return true;
+			}
+			if (tempOldStartDate != null && tempNewStartDate != null) {
+				String tempD1 = tempOldStartDate.toString();
+				String tempD2 = tempNewStartDate.toString();
+				if (tempD1 != null && tempD2 != null && tempD1.equals(tempD2)) {
+					return true;
+				}
 			}
 		}
 		return false;
@@ -198,7 +210,7 @@ public class GoogleSync {
 					System.out.print(new String(tempB));
 				}
 			}
-			Events tempExecute = tempList.execute();
+			Events tempExecute = config(tempList).execute();
 			List<Event> tempItems = tempExecute.getItems();
 			if (tempItems != null) {
 				tempCurrentEvents.addAll(tempItems);
@@ -210,6 +222,10 @@ public class GoogleSync {
 			tempList.setPageToken(tempNextPageToken);
 		}
 		return tempCurrentEvents;
+	}
+
+	private <R extends AbstractGoogleClientRequest> R config(R aRequest) {
+		return (R) aRequest.setDisableGZipContent(true);
 	}
 
 	private Event newEvent(Deadline aDeadline) {
@@ -233,8 +249,9 @@ public class GoogleSync {
 		tempCal.setTime(startDate);
 		boolean tempIsWholeDayEvent = tempCal.get(Calendar.HOUR_OF_DAY) == 0 && tempCal.get(Calendar.MINUTE) == 0;
 		if (tempIsWholeDayEvent) {
-			event.setStart(new EventDateTime().setDate(new java.sql.Date(startDate.getTime()).toString()));
-			event.setEnd(new EventDateTime().setDate(new java.sql.Date(startDate.getTime() + 24 * 3600000).toString()));
+			event.setStart(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
+			event.setEnd(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000)
+					.toString())));
 		} else {
 			Date endDate = new Date(startDate.getTime() + 3600000);
 			DateTime start = new DateTime(startDate, TimeZone.getDefault());

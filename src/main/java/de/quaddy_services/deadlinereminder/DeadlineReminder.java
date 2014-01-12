@@ -92,12 +92,8 @@ public class DeadlineReminder {
 				@Override
 				public void windowClosing(WindowEvent aE) {
 					super.windowClosing(aE);
-					EventQueue.invokeLater(new Runnable() {
-						@Override
-						public void run() {
-							exit();
-						}
-					});
+					LOGGER.info("Closing");
+					exit();
 				}
 			});
 			Timer tempTimer;

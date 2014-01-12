@@ -15,9 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,10 +24,11 @@ import de.quaddy_services.deadlinereminder.Deadline;
 import de.quaddy_services.deadlinereminder.Storage;
 
 public class FileStorage implements Storage {
-	private static final Logger LOGGER= Logger.getLogger("GoogleSync");
+	private static final Logger LOGGER = Logger.getLogger("FileStorage");
 
 	public static final String TERMIN_TXT = "termin.txt";
-	private static final String INFO_PREFIX = "---- ";
+	private static final String INFO_PREFIX = "--";
+	private static final String INFO_PREFIX2 = "#";
 	public static final String TERMIN_DONE_TXT = "termin-done.txt";
 	private static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
 	private static DateFormat timeFormat = new SimpleDateFormat("HH:mm");
@@ -86,6 +85,9 @@ public class FileStorage implements Storage {
 	private List<Deadline> parseDeadline(String tempLine, boolean aRepeating) {
 		List<Deadline> tempDeadlines = new ArrayList<Deadline>();
 		if (tempLine.startsWith(INFO_PREFIX)) {
+			return tempDeadlines;
+		}
+		if (tempLine.startsWith(INFO_PREFIX2)) {
 			return tempDeadlines;
 		}
 		try {
@@ -145,11 +147,11 @@ public class FileStorage implements Storage {
 		}
 		if (tempTime == null) {
 			return aDate;
-//			try {
-//				tempTime = timeFormat.parse("08:00");
-//			} catch (ParseException e) {
-//				// ignore
-//			}
+			//			try {
+			//				tempTime = timeFormat.parse("08:00");
+			//			} catch (ParseException e) {
+			//				// ignore
+			//			}
 		}
 		Calendar tempCal = Calendar.getInstance();
 		tempCal.setTime(tempDate);
@@ -263,7 +265,7 @@ public class FileStorage implements Storage {
 					}
 				} catch (Exception e) {
 					System.out.println("Ignore " + anInfo);
-					LOGGER.log(Level.WARNING,"Ignore",e);
+					LOGGER.log(Level.WARNING, "Ignore", e);
 					// Annual event
 					tempType = 'Y';
 					tempCount = 1;

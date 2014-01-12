@@ -14,6 +14,13 @@
 
 package de.quaddy_services.deadlinereminder.extern;
 
+import java.awt.Desktop;
+import java.awt.Desktop.Action;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
@@ -21,13 +28,6 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.common.base.Preconditions;
-
-import java.awt.Desktop;
-import java.awt.Desktop.Action;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
 
 /**
  * Implements OAuth authentication "native" flow recommended for installed
@@ -124,28 +124,26 @@ public class OAuth2Native {
 	 */
 	public static Credential authorize(HttpTransport transport, JsonFactory jsonFactory,
 			VerificationCodeReceiver receiver, Iterable<String> scopes) throws Exception {
-		try {
-			String redirectUri = receiver.getRedirectUri();
-			GoogleClientSecrets clientSecrets = loadClientSecrets(jsonFactory);
-			// redirect to an authorization page
-			GoogleAuthorizationCodeFlow.Builder tempBuilder = new GoogleAuthorizationCodeFlow.Builder(transport,
-					jsonFactory, clientSecrets, scopes);
-			tempBuilder.setCredentialStore(new PersistentCredentialStore());
-			GoogleAuthorizationCodeFlow flow = tempBuilder.build();
-			String tempUserName = System.getProperty("user.name", "-");
-			Credential tempLoadCredential = flow.loadCredential(tempUserName);
-			if (tempLoadCredential != null) {
-				return tempLoadCredential;
-			}
-			browse(flow.newAuthorizationUrl().setRedirectUri(redirectUri).build());
-			// receive authorization code and exchange it for an access token
-			String code = receiver.waitForCode();
-			GoogleTokenResponse response = flow.newTokenRequest(code).setRedirectUri(redirectUri).execute();
-			// store credential and return it
-			return flow.createAndStoreCredential(response, tempUserName);
-		} finally {
-			receiver.stop();
+		String redirectUri = receiver.getRedirectUri();
+		GoogleClientSecrets clientSecrets = loadClientSecrets(jsonFactory);
+		// redirect to an authorization page
+		GoogleAuthorizationCodeFlow.Builder tempBuilder = new GoogleAuthorizationCodeFlow.Builder(transport,
+				jsonFactory, clientSecrets, scopes);
+		tempBuilder.setCredentialStore(new PersistentCredentialStore());
+		GoogleAuthorizationCodeFlow flow = tempBuilder.build();
+		String tempUserName = System.getProperty("user.name", "-");
+		Credential tempLoadCredential = flow.loadCredential(tempUserName);
+		if (tempLoadCredential != null) {
+			return tempLoadCredential;
 		}
+		browse(flow.newAuthorizationUrl().setRedirectUri(redirectUri).build());
+		// receive authorization code and exchange it for an access token
+		String code = receiver.waitForCode();
+		GoogleTokenResponse response = flow.newTokenRequest(code).setRedirectUri(redirectUri).execute();
+		// store credential and return it
+		Credential tempCreateAndStoreCredential = flow.createAndStoreCredential(response, tempUserName);
+		receiver.stop();
+		return tempCreateAndStoreCredential;
 	}
 
 	/** Open a browser at the given URL. */

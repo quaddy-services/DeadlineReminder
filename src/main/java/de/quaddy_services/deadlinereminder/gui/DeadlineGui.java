@@ -34,7 +34,7 @@ import de.quaddy_services.deadlinereminder.Model;
 public class DeadlineGui extends JPanel {
 	private static DateFormat dateFormat = new SimpleDateFormat("EE dd.MM.yyyy");
 	private static final Logger LOGGER = Logger.getLogger("DeadlineGui");
-	
+
 	public void setModel(Model aModel) {
 		removeAll();
 		setLayout(new CardLayout());
@@ -88,7 +88,7 @@ public class DeadlineGui extends JPanel {
 						} else {
 							tempDeadline.setDone(false);
 						}
-						LOGGER.log(Level.INFO,"Selection:"+tempDeadline);
+						LOGGER.log(Level.INFO, "Selection:" + tempDeadline);
 					}
 				});
 				tempCheckBox.addMouseListener(new MouseAdapter() {
@@ -106,6 +106,7 @@ public class DeadlineGui extends JPanel {
 	}
 
 	protected void showPopUp(MouseEvent aE) {
+		LOGGER.info("showPopUp " + aE);
 		final JCheckBox tempCheckBox = (JCheckBox) aE.getSource();
 		tempCheckBox.requestFocus();
 		if (aE.getButton() == MouseEvent.BUTTON3) {
@@ -113,8 +114,8 @@ public class DeadlineGui extends JPanel {
 			tempJPopupMenu.add(new AbstractAction("Copy") {
 				@Override
 				public void actionPerformed(ActionEvent aE) {
-					Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
-							new StringSelection(tempCheckBox.getText()), null);
+					Toolkit.getDefaultToolkit().getSystemClipboard()
+							.setContents(new StringSelection(tempCheckBox.getText()), null);
 				}
 			});
 			tempJPopupMenu.show(tempCheckBox, aE.getX(), aE.getY());
