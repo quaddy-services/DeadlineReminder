@@ -147,8 +147,10 @@ public class GoogleSync {
 			Event event = newEvent(tempDeadline);
 			tempNewEvents.add(event);
 		}
+		LOGGER.info("Matching local events: " + tempNewEvents.size());
 		ArrayList<Event> tempCurrentEvents;
 		tempCurrentEvents = getCurrentItems(client, tempDeadlineCalendarId);
+		LOGGER.info("Already at Google: " + tempCurrentEvents.size());
 		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
 			Event tempEvent = iCurrent.next();
 			for (Iterator<Event> iNew = tempNewEvents.iterator(); iNew.hasNext();) {
@@ -182,9 +184,6 @@ public class GoogleSync {
 			}
 			DateTime tempOldStartDate = tempOldStart.getDate();
 			DateTime tempNewStartDate = tempNewStart.getDate();
-			if (tempOldStartDate == null && tempNewStartDate == null) {
-				return true;
-			}
 			if (tempOldStartDate != null && tempNewStartDate != null) {
 				String tempD1 = tempOldStartDate.toString();
 				String tempD2 = tempNewStartDate.toString();
