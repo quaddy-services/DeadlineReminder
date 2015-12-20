@@ -2,6 +2,7 @@ package de.quaddy_services.deadlinereminder.extern;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -66,6 +67,8 @@ public class GoogleSync {
 					LOGGER.info("Start");
 					push(aOpenDeadlines);
 					LOGGER.info("Finished");
+				} catch (SocketTimeoutException e) {
+					LOGGER.log(Level.SEVERE, "Retry later...", e);
 				} catch (Exception e) {
 					LOGGER.log(Level.SEVERE, "Error on authenticatino", e);
 					String tempUserName = System.getProperty("user.name", "-");
