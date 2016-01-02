@@ -1,7 +1,8 @@
 echo on
 echo %date% >src/main/resources/version.txt
 del target\DeadlineReminder-SNAPSHOT.zip
-call mvn -U clean install source:jar webstart:jnlp
+call mvn -U clean install source:jar
+rem  webstart:jnlp
 if %errorlevel% == 1 goto ende
 if not exist target\DeadlineReminder-SNAPSHOT.zip goto ende
 rem if not exist target\DeadlineReminder-SNAPSHOT.jar goto ende
