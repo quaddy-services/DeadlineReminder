@@ -12,8 +12,9 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest;
@@ -41,7 +42,7 @@ import de.quaddy_services.deadlinereminder.file.FileStorage;
  * 
  */
 public class GoogleSync {
-	private static final Logger LOGGER = Logger.getLogger("GoogleSync");
+	private static final Logger LOGGER = LoggerFactory.getLogger(GoogleSync.class);
 	private static final boolean DEBUG = false;
 
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yy");
@@ -51,9 +52,9 @@ public class GoogleSync {
 
 	public void pushToGoogle(final List<Deadline> aOpenDeadlines) {
 		if (t != null) {
-			LOGGER.warning("Already active: " + t);
+			LOGGER.warn("Already active: " + t);
 			if (threadKill < System.currentTimeMillis()) {
-				LOGGER.warning("Interrupt: " + t);
+				LOGGER.warn("Interrupt: " + t);
 				t.interrupt();
 			} else {
 				return;
@@ -68,19 +69,19 @@ public class GoogleSync {
 					push(aOpenDeadlines);
 					LOGGER.info("Finished");
 				} catch (SocketTimeoutException e) {
-					LOGGER.log(Level.SEVERE, "Retry later...", e);
+					LOGGER.error("Retry later...", e);
 				} catch (Exception e) {
-					LOGGER.log(Level.SEVERE, "Error on authenticatino", e);
+					LOGGER.error("Error on authenticatino", e);
 					String tempUserName = System.getProperty("user.name", "-");
 					PersistentCredentialStore tempPersistentCredentialStore = new PersistentCredentialStore();
 					tempPersistentCredentialStore.delete(tempUserName);
 					// try again
 					try {
-						LOGGER.log(Level.INFO, "Again:Start");
+						LOGGER.info("Again:Start");
 						push(aOpenDeadlines);
-						LOGGER.log(Level.INFO, "Again:Finished");
+						LOGGER.info("Again:Finished");
 					} catch (Exception e2) {
-						LOGGER.log(Level.SEVERE, "Again:Error", e2);
+						LOGGER.error("Again:Error", e2);
 					}
 
 				} finally {
@@ -168,12 +169,12 @@ public class GoogleSync {
 		for (Event tempEvent : tempCurrentEvents) {
 			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
 			config(tempDelete).execute();
-			LOGGER.log(Level.INFO, "Deleted " + tempEvent.getSummary() + " " + tempEvent);
+			LOGGER.info("Deleted " + tempEvent.getSummary() + " " + tempEvent);
 			slowDown();
 		}
 		for (Event tempEvent : tempNewEvents) {
 			Event tempResult = config(client.events().insert(tempDeadlineCalendarId, tempEvent)).execute();
-			LOGGER.log(Level.INFO, "Added " + tempEvent.getSummary() + " " + tempResult);
+			LOGGER.info("Added " + tempEvent.getSummary() + " " + tempResult);
 			slowDown();
 		}
 	}
@@ -196,7 +197,7 @@ public class GoogleSync {
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {
-			LOGGER.log(Level.WARNING, "Error", e);
+			LOGGER.warn("Error", e);
 		}
 	}
 

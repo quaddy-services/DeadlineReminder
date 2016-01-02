@@ -18,8 +18,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.swing.AbstractAction;
 import javax.swing.JCheckBox;
@@ -28,12 +26,15 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.quaddy_services.deadlinereminder.Deadline;
 import de.quaddy_services.deadlinereminder.Model;
 
 public class DeadlineGui extends JPanel {
 	private static DateFormat dateFormat = new SimpleDateFormat("EE dd.MM.yyyy");
-	private static final Logger LOGGER = Logger.getLogger("DeadlineGui");
+	private static final Logger LOGGER = LoggerFactory.getLogger(DeadlineGui.class);
 
 	public void setModel(Model aModel) {
 		removeAll();
@@ -88,7 +89,7 @@ public class DeadlineGui extends JPanel {
 						} else {
 							tempDeadline.setDone(false);
 						}
-						LOGGER.log(Level.INFO, "Selection:" + tempDeadline);
+						LOGGER.info("Selection:" + tempDeadline);
 					}
 				});
 				tempCheckBox.addMouseListener(new MouseAdapter() {

@@ -14,18 +14,19 @@
 
 package de.quaddy_services.deadlinereminder.extern;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.Socket;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Request;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.handler.AbstractHandler;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.util.logging.Logger;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Runs a Jetty server on a free port, waiting for OAuth to redirect to it with
@@ -37,7 +38,7 @@ import javax.servlet.http.HttpServletResponse;
  * @author Yaniv Inbar
  */
 public final class LocalServerReceiver implements VerificationCodeReceiver {
-	private static final Logger LOGGER = Logger.getLogger("GoogleSync");
+	private static final Logger LOGGER = LoggerFactory.getLogger(GoogleSync.class);
 
 	private static final String CALLBACK_PATH = "/Callback";
 
@@ -96,7 +97,7 @@ public final class LocalServerReceiver implements VerificationCodeReceiver {
 		@Override
 		public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
 				throws IOException {
-			LOGGER.info("handle:"+target);
+			LOGGER.info("handle:" + target);
 			if (!CALLBACK_PATH.equals(target)) {
 				return;
 			}
@@ -105,7 +106,7 @@ public final class LocalServerReceiver implements VerificationCodeReceiver {
 			((Request) request).setHandled(true);
 			String error = request.getParameter("error");
 			if (error != null) {
-				LOGGER.severe("Authorization failed. Error=" + error);
+				LOGGER.error("Authorization failed. Error=" + error);
 			}
 			code = request.getParameter("code");
 			synchronized (LocalServerReceiver.this) {

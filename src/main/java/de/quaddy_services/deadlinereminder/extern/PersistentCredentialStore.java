@@ -5,14 +5,15 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.auth.oauth2.CredentialStore;
 
 public class PersistentCredentialStore implements CredentialStore {
-	private static final Logger LOGGER = Logger.getLogger("PersistentCredentialStore");
+	private static final Logger LOGGER = LoggerFactory.getLogger(PersistentCredentialStore.class);
 
 	@Override
 	public void delete(String aUserId, Credential aCredential) {
@@ -38,7 +39,7 @@ public class PersistentCredentialStore implements CredentialStore {
 				LOGGER.info("Loaded: " + tempInfo);
 				return true;
 			} catch (Exception e) {
-				LOGGER.log(Level.SEVERE, "Ignore", e);
+				LOGGER.error("Ignore", e);
 			}
 		}
 		return false;

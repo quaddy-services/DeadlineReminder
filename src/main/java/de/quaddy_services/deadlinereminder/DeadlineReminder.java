@@ -17,15 +17,14 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.FileHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.Timer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.quaddy_services.deadlinereminder.extern.GoogleSync;
 import de.quaddy_services.deadlinereminder.file.FileStorage;
@@ -50,27 +49,17 @@ public class DeadlineReminder {
 	private static void updateLogger() {
 		File tempDir = new File(System.getProperty("user.home", ".") + "/DeadlineReminder");
 		tempDir.mkdirs();
-		try {
-			FileHandler fh = new FileHandler(tempDir.getAbsolutePath() + "/DeadlineReminder.log");
-			fh.setFormatter(new SimpleFormatter());
-			Logger tempGlobal = Logger.getGlobal();
-			Logger tempRootLogger = tempGlobal.getParent();
-			tempRootLogger.addHandler(fh);
-		} catch (Exception e) {
-			e.printStackTrace();
-			// ignore
-		}
 	}
 
 	private Model model;
-	private Logger LOGGER = Logger.getLogger("DeadlineReminder");
+	private Logger LOGGER = LoggerFactory.getLogger(DeadlineReminder.class);
 	private GoogleSync googleSync = new GoogleSync();
 
 	protected void mainEventQueue() {
 		try {
-			LOGGER.log(Level.INFO, "Start");
+			LOGGER.info("Start");
 			model = createModel();
-			LOGGER.log(Level.INFO, new Date() + ": Found " + model.getOpenDeadlines().size() + " deadlines");
+			LOGGER.info(new Date() + ": Found " + model.getOpenDeadlines().size() + " deadlines");
 			googleSync.pushToGoogle(model.getOpenDeadlines());
 			lastSyncSize = model.getOpenDeadlines().size();
 			DeadlineGui tempGUI = new DeadlineGui();
@@ -108,7 +97,7 @@ public class DeadlineReminder {
 			tempTimer.setRepeats(true);
 			tempTimer.start();
 		} catch (Exception e) {
-			LOGGER.log(Level.SEVERE, "Error", e);
+			LOGGER.error("Error", e);
 		}
 	}
 
@@ -131,7 +120,7 @@ public class DeadlineReminder {
 		// for (Deadline tempDeadline : tempDeadlines) {
 		// System.out.println(tempDeadline);
 		// }
-		LOGGER.log(Level.FINER, new Date() + ": Found " + tempDeadlines.size() + " deadlines");
+		LOGGER.debug(new Date() + ": Found " + tempDeadlines.size() + " deadlines");
 		final Model tempModel = new Model();
 		tempModel.setSourceInfo(tempStorage.getSourceInfo());
 		tempModel.setOpenDeadlines(tempDeadlines);
@@ -139,17 +128,17 @@ public class DeadlineReminder {
 	}
 
 	private void exit() {
-		LOGGER.log(Level.INFO, "exit");
+		LOGGER.info("exit");
 		saveModel();
 		exitApplicationNow();
 	}
 
 	private void exitApplicationNow() {
-		LOGGER.log(Level.INFO, "Start exitThread");
+		LOGGER.info("Start exitThread");
 		Thread tempExitThread = new Thread() {
 			@Override
 			public void run() {
-				LOGGER.log(Level.INFO, "System.exit(0)");
+				LOGGER.info("System.exit(0)");
 				System.exit(0);
 			}
 		};
@@ -158,7 +147,7 @@ public class DeadlineReminder {
 	}
 
 	private synchronized void saveModel() {
-		LOGGER.log(Level.INFO, new Date() + ":SaveModel");
+		LOGGER.info(new Date() + ":SaveModel");
 		Storage tempFileStorage = new FileStorage();
 		tempFileStorage.saveConfirmedTasks(model.getOpenDeadlines());
 	}
@@ -168,11 +157,11 @@ public class DeadlineReminder {
 
 	private void every10Minutes(JFrame aFrame) {
 		try {
-			LOGGER.log(Level.FINER, new Date() + ":Check");
+			LOGGER.debug(new Date() + ":Check");
 			boolean tempDoneAvailable = false;
 			for (Deadline tempDeadline : model.getOpenDeadlines()) {
 				if (tempDeadline.isDone()) {
-					LOGGER.log(Level.INFO, "Done:" + tempDeadline);
+					LOGGER.info("Done:" + tempDeadline);
 					tempDoneAvailable = true;
 					break;
 				}

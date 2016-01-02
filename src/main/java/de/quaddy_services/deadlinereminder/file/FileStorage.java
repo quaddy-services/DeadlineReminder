@@ -17,14 +17,15 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.quaddy_services.deadlinereminder.Deadline;
 import de.quaddy_services.deadlinereminder.Storage;
 
 public class FileStorage implements Storage {
-	private static final Logger LOGGER = Logger.getLogger("FileStorage");
+	private static final Logger LOGGER = LoggerFactory.getLogger(FileStorage.class);
 
 	public static final String TERMIN_TXT = "termin.txt";
 	private static final String INFO_PREFIX = "--";
@@ -265,7 +266,7 @@ public class FileStorage implements Storage {
 					}
 				} catch (Exception e) {
 					System.out.println("Ignore " + anInfo);
-					LOGGER.log(Level.WARNING, "Ignore", e);
+					LOGGER.warn("Ignore", e);
 					// Annual event
 					tempType = 'Y';
 					tempCount = 1;
