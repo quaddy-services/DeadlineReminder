@@ -169,10 +169,34 @@ public class GoogleSync {
 			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
 			config(tempDelete).execute();
 			LOGGER.log(Level.INFO, "Deleted " + tempEvent.getSummary() + " " + tempEvent);
+			slowDown();
 		}
 		for (Event tempEvent : tempNewEvents) {
 			Event tempResult = config(client.events().insert(tempDeadlineCalendarId, tempEvent)).execute();
 			LOGGER.log(Level.INFO, "Added " + tempEvent.getSummary() + " " + tempResult);
+			slowDown();
+		}
+	}
+
+	/**
+	 * Avoid
+	 * 
+	 * com.google.api.client.googleapis.json.GoogleJsonResponseException: 403 Forbidden
+	{
+	"code" : 403,
+	"errors" : [ {
+	"domain" : "usageLimits",
+	"message" : "Rate Limit Exceeded",
+	"reason" : "rateLimitExceeded"
+	} ],
+	"message" : "Rate Limit Exceeded"
+
+	 */
+	private void slowDown() {
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			LOGGER.log(Level.WARNING, "Error", e);
 		}
 	}
 
