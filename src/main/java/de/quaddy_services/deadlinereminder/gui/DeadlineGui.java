@@ -33,7 +33,7 @@ import de.quaddy_services.deadlinereminder.Deadline;
 import de.quaddy_services.deadlinereminder.Model;
 
 public class DeadlineGui extends JPanel {
-	private static DateFormat dateFormat = new SimpleDateFormat("EE dd.MM.yyyy");
+	public static DateFormat dateFormat = new SimpleDateFormat("EE dd.MM.yyyy");
 	private static final Logger LOGGER = LoggerFactory.getLogger(DeadlineGui.class);
 
 	public void setModel(Model aModel) {

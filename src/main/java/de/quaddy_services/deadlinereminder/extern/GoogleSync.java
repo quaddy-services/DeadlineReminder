@@ -34,6 +34,7 @@ import com.google.api.services.calendar.model.Events;
 import de.quaddy_services.deadlinereminder.Deadline;
 import de.quaddy_services.deadlinereminder.Storage;
 import de.quaddy_services.deadlinereminder.file.FileStorage;
+import de.quaddy_services.deadlinereminder.gui.DeadlineGui;
 
 /**
  * https://code.google.com/apis/console/
@@ -266,13 +267,18 @@ public class GoogleSync {
 		Date tempTodayMorning = tempCal.getTime();
 		Event event = new Event();
 		Date startDate;
+		String tempText;
 		if (aDeadline.getWhen().before(tempToday)) {
-			event.setSummary(DATE_FORMAT.format(aDeadline.getWhen()) + "!" + aDeadline.getInfo());
+			tempText = DATE_FORMAT.format(aDeadline.getWhen()) + "!" + aDeadline.getInfo();
 			startDate = tempTodayMorning;
 		} else {
-			event.setSummary(aDeadline.getInfo());
+			tempText = aDeadline.getInfo();
 			startDate = aDeadline.getWhen();
 		}
+		if (aDeadline.getRepeating() != null) {
+			tempText += " (" + DeadlineGui.dateFormat.format(aDeadline.getRepeating()) + ")";
+		}
+		event.setSummary(tempText);
 		tempCal.setTime(startDate);
 		boolean tempIsWholeDayEvent = tempCal.get(Calendar.HOUR_OF_DAY) == 0 && tempCal.get(Calendar.MINUTE) == 0;
 		if (tempIsWholeDayEvent) {
