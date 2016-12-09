@@ -183,24 +183,20 @@ public class FileStorage implements Storage {
 
 	private void addRepeating(List<Deadline> tempDeadlines, Date tempDate, String tempInfo) {
 		Calendar tempStartingPoint = Calendar.getInstance();
-		int tempFutureCount;
 		UnitAndStep tempStepAndUnit = getStepAndUnit(tempInfo);
-		System.out.println(tempStepAndUnit);
+		LOGGER.info("stepAndUnit=" + tempStepAndUnit);
 		int tempMaxAddCount;
 		if (tempStepAndUnit.unit == Calendar.YEAR) {
 			tempStartingPoint.add(Calendar.YEAR, -1);
-			tempFutureCount = 3;
 			tempMaxAddCount = Math.max(1, 4 / tempStepAndUnit.step);
 		} else if (tempStepAndUnit.unit == Calendar.MONTH) {
 			tempStartingPoint.add(Calendar.MONTH, -3);
-			tempFutureCount = 24;
 			tempMaxAddCount = Math.max(3, 12 / tempStepAndUnit.step);
 		} else if (tempStepAndUnit.unit == Calendar.WEEK_OF_YEAR) {
 			tempStartingPoint.add(Calendar.WEEK_OF_YEAR, -3);
-			tempFutureCount = 100;
 			tempMaxAddCount = Math.max(10, 40 / tempStepAndUnit.step);
 		} else {
-			System.err.println("No valid range " + tempInfo);
+			LOGGER.error("No valid range " + tempInfo);
 			return;
 		}
 		Calendar tempCal = Calendar.getInstance();
@@ -216,13 +212,12 @@ public class FileStorage implements Storage {
 			tempCal.add(tempStepAndUnit.unit, tempStepAndUnit.step);
 			tempDateYear = tempCal.get(Calendar.YEAR);
 		}
-		// System.out.println("tempCal="+tempCal.getTime());
-		System.out.println("tempStartingPoint=" + tempStartingPoint.getTime());
+		// LOGGER.info("tempCal="+tempCal.getTime());
+		LOGGER.info("tempStartingPoint=" + tempStartingPoint.getTime());
 		int tempAddCount = 0;
-		for (int y = 0; y < tempFutureCount; y++) {
-			System.out.println(tempCal.getTime() + " for " + tempDate + " " + tempInfo);
+		while (true) {
 			if (tempStartingPoint.before(tempCal)) {
-				System.out.println("Match");
+				LOGGER.info("Match " + tempCal.getTime() + " for " + tempDate + " " + tempInfo);
 				Deadline tempDeadline = new Deadline();
 				Date tempWhen = tempCal.getTime();
 				tempWhen = addTime(tempWhen, tempInfo);
@@ -254,6 +249,9 @@ public class FileStorage implements Storage {
 					String tempCountString = tempNextWord.substring(0, tempNextWord.length() - 1);
 					try {
 						tempCount = new Integer(tempCountString);
+						if (tempCount < 1) {
+							tempCount = 1;
+						}
 						tempType = tempNextWord.charAt(tempNextWord.length() - 1);
 					} catch (NumberFormatException e) {
 						tempCount = 1;
@@ -265,7 +263,7 @@ public class FileStorage implements Storage {
 						}
 					}
 				} catch (Exception e) {
-					System.out.println("Ignore " + anInfo);
+					LOGGER.info("Ignore " + anInfo);
 					LOGGER.warn("Ignore", e);
 					// Annual event
 					tempType = 'Y';
@@ -308,7 +306,7 @@ public class FileStorage implements Storage {
 				for (Deadline tempDeadline : tempDones) {
 					String tempLine = dateFormat.format(tempDeadline.getWhen()) + tempDeadline.getInfo();
 					tempDone.println(tempLine);
-					System.out.println(new Date() + ": Confirmed: '" + tempLine + "'");
+					LOGGER.info(new Date() + ": Confirmed: '" + tempLine + "'");
 				}
 				tempDone.close();
 			}
