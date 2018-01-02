@@ -39,6 +39,8 @@ import de.quaddy_services.deadlinereminder.gui.DeadlineGui;
 /**
  * https://code.google.com/apis/console/
  * 
+ * https://console.developers.google.com/apis/credentials?project=api-project-85684967233
+ * 
  * @author User
  * 
  */
