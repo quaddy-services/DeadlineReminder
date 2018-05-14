@@ -36,13 +36,30 @@ public class DeadlineGui extends JPanel {
 	public static DateFormat dateFormat = new SimpleDateFormat("EE dd.MM.yyyy");
 	private static final Logger LOGGER = LoggerFactory.getLogger(DeadlineGui.class);
 
+	private JPanel statusPanel = new JPanel();
+	private JLabel statusLine = new JLabel();
+
 	public void setModel(Model aModel) {
 		removeAll();
-		setLayout(new CardLayout());
-		JPanel tempPanel = new JPanel();
-		JScrollPane tempScroll = new JScrollPane(tempPanel);
-		add(tempScroll, "all");
-		tempPanel.setLayout(new GridBagLayout());
+		setLayout(new GridBagLayout());
+		GridBagConstraints tempGBC1 = new GridBagConstraints();
+		tempGBC1.gridx = 0;
+		tempGBC1.gridy = 0;
+		tempGBC1.weightx = 1.0;
+		tempGBC1.weighty = 1.0;
+		tempGBC1.fill = GridBagConstraints.BOTH;
+
+		JPanel tempContentPanel = new JPanel();
+		JScrollPane tempScroll = new JScrollPane(tempContentPanel);
+		add(tempScroll, tempGBC1);
+
+		tempGBC1.gridy++;
+		tempGBC1.weighty = 0.0;
+		add(statusPanel, tempGBC1);
+		statusPanel.setLayout(new CardLayout());
+		statusPanel.add(statusLine, "all");
+
+		tempContentPanel.setLayout(new GridBagLayout());
 		GridBagConstraints tempGBC = new GridBagConstraints();
 		tempGBC.fill = GridBagConstraints.NONE;
 		tempGBC.anchor = GridBagConstraints.WEST;
@@ -59,7 +76,7 @@ public class DeadlineGui extends JPanel {
 		Date tempOverNextWeek = tempCal.getTime();
 		List<Deadline> tempOpenDeadlines = aModel.getOpenDeadlines();
 		if (tempOpenDeadlines.size() == 0) {
-			tempPanel.add(new JLabel("No open deadlines in " + aModel.getSourceInfo()), tempGBC);
+			tempContentPanel.add(new JLabel("No open deadlines in " + aModel.getSourceInfo()), tempGBC);
 		} else {
 			for (final Deadline tempDeadline : tempOpenDeadlines) {
 				String tempText = dateFormat.format(tempDeadline.getWhen()) + ": " + tempDeadline.getInfo();
@@ -80,7 +97,7 @@ public class DeadlineGui extends JPanel {
 					tempCheckBox.setForeground(Color.GRAY);
 				}
 				tempGBC.gridy++;
-				tempPanel.add(tempCheckBox, tempGBC);
+				tempContentPanel.add(tempCheckBox, tempGBC);
 				tempCheckBox.addItemListener(new ItemListener() {
 					@Override
 					public void itemStateChanged(ItemEvent aE) {
@@ -121,5 +138,9 @@ public class DeadlineGui extends JPanel {
 			});
 			tempJPopupMenu.show(tempCheckBox, aE.getX(), aE.getY());
 		}
+	}
+
+	public void setStatus(String aText) {
+		statusLine.setText(aText);
 	}
 }

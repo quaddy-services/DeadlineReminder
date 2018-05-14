@@ -53,16 +53,20 @@ public class DeadlineReminder {
 
 	private Model model;
 	private Logger LOGGER = LoggerFactory.getLogger(DeadlineReminder.class);
-	private GoogleSync googleSync = new GoogleSync();
+	private GoogleSync googleSync;
 
 	protected void mainEventQueue() {
 		try {
 			LOGGER.info("Start");
 			model = createModel();
 			LOGGER.info(new Date() + ": Found " + model.getOpenDeadlines().size() + " deadlines");
+			googleSync = new GoogleSync();
+			DeadlineGui tempGUI = new DeadlineGui();
+
+			googleSync.setLogListener(new StatusLogListener(tempGUI));
+
 			googleSync.pushToGoogle(model.getOpenDeadlines());
 			lastSyncSize = model.getOpenDeadlines().size();
-			DeadlineGui tempGUI = new DeadlineGui();
 			tempGUI.setModel(model);
 			final JFrame tempFrame = new JFrame();
 			tempFrame.setIconImage(loadIcon());

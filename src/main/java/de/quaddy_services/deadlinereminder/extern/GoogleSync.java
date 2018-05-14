@@ -53,11 +53,13 @@ public class GoogleSync {
 	private Thread t = null;
 	private long threadKill;
 
+	private LogListener logListener = null;
+
 	public void pushToGoogle(final List<Deadline> aOpenDeadlines) {
 		if (t != null) {
-			LOGGER.warn("Already active: " + t);
+			logWarn("Already active: " + t);
 			if (threadKill < System.currentTimeMillis()) {
-				LOGGER.warn("Interrupt: " + t);
+				logWarn("Interrupt: " + t);
 				t.interrupt();
 			} else {
 				return;
@@ -68,23 +70,23 @@ public class GoogleSync {
 			@Override
 			public void run() {
 				try {
-					LOGGER.info("Start");
+					logInfo("Start");
 					push(aOpenDeadlines);
-					LOGGER.info("Finished");
+					logInfo("Finished");
 				} catch (SocketTimeoutException e) {
-					LOGGER.error("Retry later...", e);
+					logError("Retry later...", e);
 				} catch (Exception e) {
-					LOGGER.error("Error on authenticatino", e);
+					logError("Error on authenticatino", e);
 					String tempUserName = System.getProperty("user.name", "-");
 					PersistentCredentialStore tempPersistentCredentialStore = new PersistentCredentialStore();
 					tempPersistentCredentialStore.delete(tempUserName);
 					// try again
 					try {
-						LOGGER.info("Again:Start");
+						logInfo("Again:Start");
 						push(aOpenDeadlines);
-						LOGGER.info("Again:Finished");
+						logInfo("Again:Finished");
 					} catch (Exception e2) {
-						LOGGER.error("Again:Error", e2);
+						logError("Again:Error", e2);
 					}
 
 				} finally {
@@ -92,9 +94,25 @@ public class GoogleSync {
 				}
 
 			}
+
 		};
 		t.setName("GoogleSync-" + t.getName());
 		t.start();
+	}
+
+	private void logWarn(String aString) {
+		LOGGER.warn(aString);
+		if (getLogListener() != null) {
+			getLogListener().warn(aString);
+		}
+	}
+
+	private void logError(String aString, Exception aE) {
+		LOGGER.error(aString, aE);
+		if (getLogListener() != null) {
+			getLogListener().error(aString + " " + aE);
+		}
+
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -126,7 +144,7 @@ public class GoogleSync {
 		// set up global Calendar instance
 		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(
 				HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName("Google-DeadlineReminder/1.0")
-				.setHttpRequestInitializer(credential).build();
+						.setHttpRequestInitializer(credential).build();
 
 		push(client, aOpenDeadlines);
 	}
@@ -154,10 +172,10 @@ public class GoogleSync {
 			Event event = newEvent(tempDeadline);
 			tempNewEvents.add(event);
 		}
-		LOGGER.info("Matching local events: " + tempNewEvents.size());
+		logInfo("Matching local events: " + tempNewEvents.size());
 		ArrayList<Event> tempCurrentEvents;
 		tempCurrentEvents = getCurrentItems(client, tempDeadlineCalendarId);
-		LOGGER.info("Already at Google: " + tempCurrentEvents.size());
+		logInfo("Already at Google: " + tempCurrentEvents.size());
 		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
 			Event tempEvent = iCurrent.next();
 			for (Iterator<Event> iNew = tempNewEvents.iterator(); iNew.hasNext();) {
@@ -172,13 +190,20 @@ public class GoogleSync {
 		for (Event tempEvent : tempCurrentEvents) {
 			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
 			config(tempDelete).execute();
-			LOGGER.info("Deleted " + tempEvent.getSummary() + " " + tempEvent);
+			logInfo("Deleted " + tempEvent.getSummary() + " " + tempEvent);
 			slowDown();
 		}
 		for (Event tempEvent : tempNewEvents) {
 			Event tempResult = config(client.events().insert(tempDeadlineCalendarId, tempEvent)).execute();
-			LOGGER.info("Added " + tempEvent.getSummary() + " " + tempResult);
+			logInfo("Added " + tempEvent.getSummary() + " " + tempResult);
 			slowDown();
+		}
+	}
+
+	private void logInfo(String aString) {
+		LOGGER.info(aString);
+		if (getLogListener() != null) {
+			getLogListener().info(aString);
 		}
 	}
 
@@ -194,13 +219,20 @@ public class GoogleSync {
 	"reason" : "rateLimitExceeded"
 	} ],
 	"message" : "Rate Limit Exceeded"
-
+	
 	 */
 	private void slowDown() {
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {
-			LOGGER.warn("Error", e);
+			logWarn("Error", e);
+		}
+	}
+
+	private void logWarn(String aString, Throwable aE) {
+		LOGGER.warn(aString, aE);
+		if (getLogListener() != null) {
+			getLogListener().warn(aString + " " + aE);
 		}
 	}
 
@@ -284,9 +316,10 @@ public class GoogleSync {
 		tempCal.setTime(startDate);
 		boolean tempIsWholeDayEvent = tempCal.get(Calendar.HOUR_OF_DAY) == 0 && tempCal.get(Calendar.MINUTE) == 0;
 		if (tempIsWholeDayEvent) {
-			event.setStart(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
-			event.setEnd(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000)
-					.toString())));
+			event.setStart(
+					new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
+			event.setEnd(new EventDateTime()
+					.setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000).toString())));
 		} else {
 			Date endDate = new Date(startDate.getTime() + 3600000);
 			DateTime start = new DateTime(startDate, TimeZone.getDefault());
@@ -295,6 +328,20 @@ public class GoogleSync {
 			event.setEnd(new EventDateTime().setDateTime(end));
 		}
 		return event;
+	}
+
+	/**
+	 * @return the logListener
+	 */
+	public final LogListener getLogListener() {
+		return logListener;
+	}
+
+	/**
+	 * @param aLogListener the logListener to set
+	 */
+	public final void setLogListener(LogListener aLogListener) {
+		logListener = aLogListener;
 	}
 
 }
