@@ -1,6 +1,7 @@
 echo on
 echo %date% >src/main/resources/version.txt
 del target\DeadlineReminder-SNAPSHOT.zip
+del target\DeadlineReminder-SNAPSHOT.jar
 call mvn -U clean install source:jar
 rem  webstart:jnlp
 if %errorlevel% == 1 goto ende
@@ -26,5 +27,5 @@ rem java -cp .;bin de.adr.html.DynamicHtml
 java -Djava.net.preferIPv4Stack=true -cp .;bin;lib\commons-net-1.4.1.jar;lib\jakarta-oro-2.0.8.jar de.adr.ftp.FtpUpdate
 popd .
 :noq
-rem call mvn clean 
+rem call mvn clean
 :ende
