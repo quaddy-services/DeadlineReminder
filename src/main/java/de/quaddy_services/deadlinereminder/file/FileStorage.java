@@ -170,16 +170,52 @@ public class FileStorage implements Storage {
 	private class UnitAndStep {
 		int unit;
 		int step;
+		String textWithoutRepeatingInfo;
+		private Date endPoint;
 
-		public UnitAndStep(int aUnit, int aStep) {
+		public UnitAndStep(int aUnit, int aStep, String aTextWithoutRepeatingInfo) {
 			super();
 			unit = aUnit;
 			step = aStep;
+			textWithoutRepeatingInfo = aTextWithoutRepeatingInfo;
 		}
 
+		/**
+		 *
+		 */
 		@Override
 		public String toString() {
-			return "UnitAndStep [step=" + step + ", unit=" + unit + "]";
+			StringBuilder tempBuilder = new StringBuilder();
+			tempBuilder.append("UnitAndStep [unit=");
+			tempBuilder.append(unit);
+			tempBuilder.append(", step=");
+			tempBuilder.append(step);
+			tempBuilder.append(", ");
+			if (textWithoutRepeatingInfo != null) {
+				tempBuilder.append("textWithoutRepeatingInfo=");
+				tempBuilder.append(textWithoutRepeatingInfo);
+				tempBuilder.append(", ");
+			}
+			if (endPoint != null) {
+				tempBuilder.append("endPoint=");
+				tempBuilder.append(endPoint);
+			}
+			tempBuilder.append("]");
+			return tempBuilder.toString();
+		}
+
+		/**
+		 * @see #endPoint
+		 */
+		public Date getEndPoint() {
+			return endPoint;
+		}
+
+		/**
+		 * @see #endPoint
+		 */
+		public void setEndPoint(Date aEndPoint) {
+			endPoint = aEndPoint;
 		}
 	}
 
@@ -220,14 +256,18 @@ public class FileStorage implements Storage {
 		// LOGGER.info("tempCal="+tempCal.getTime());
 		LOGGER.info("tempStartingPoint=" + tempStartingPoint.getTime());
 		int tempAddCount = 0;
+		Date tempEndPoint = tempStepAndUnit.getEndPoint();
 		while (true) {
 			if (tempStartingPoint.before(tempCal)) {
 				LOGGER.info("Match " + tempCal.getTime() + " for " + tempDate + " " + tempInfo);
 				Deadline tempDeadline = new Deadline();
 				Date tempWhen = tempCal.getTime();
+				if (tempEndPoint != null && tempWhen.after(tempEndPoint)) {
+					break;
+				}
 				tempWhen = addTime(tempWhen, tempInfo);
 				tempDeadline.setWhen(tempWhen);
-				tempDeadline.setInfo(tempInfo);
+				tempDeadline.setInfo(tempStepAndUnit.textWithoutRepeatingInfo);
 				tempDeadline.setRepeating(tempDate);
 				tempDeadlines.add(tempDeadline);
 				tempAddCount++;
@@ -240,16 +280,27 @@ public class FileStorage implements Storage {
 	}
 
 	private UnitAndStep getStepAndUnit(String anInfo) {
-		int tempSpace = anInfo.indexOf(" ");
-		if (tempSpace > 0) {
+		int tempSpace = anInfo.indexOf(' ');
+		int tempMinus = anInfo.indexOf('-');
+		int tempDelimiter;
+		if (tempSpace == -1) {
+			tempDelimiter = tempMinus;
+		} else if (tempMinus == -1) {
+			tempDelimiter = tempSpace;
+		} else {
+			tempDelimiter = Math.min(tempSpace, tempMinus);
+		}
+		if (tempDelimiter > 0) {
 			char tempType;
 			Integer tempCount;
-			if (tempSpace == 1) {
+			String tempTextWithoutRepeatingInfo = "*" + anInfo.substring(tempDelimiter + 1);
+			boolean tempCheckEndPoint = anInfo.charAt(tempDelimiter) == '-';
+			if (tempDelimiter == 1) {
 				// Annual event
 				tempType = 'Y';
 				tempCount = 1;
 			} else {
-				String tempNextWord = anInfo.substring(1, tempSpace);
+				String tempNextWord = anInfo.substring(1, tempDelimiter);
 				try {
 					String tempCountString = tempNextWord.substring(0, tempNextWord.length() - 1);
 					try {
@@ -260,7 +311,7 @@ public class FileStorage implements Storage {
 						tempType = tempNextWord.charAt(tempNextWord.length() - 1);
 					} catch (NumberFormatException e) {
 						tempCount = 1;
-						if (tempNextWord.length() == 1 || (tempNextWord.length() > 1 && tempNextWord.charAt(1) == ' ')) {
+						if (tempNextWord.length() == 1) {
 							tempType = tempNextWord.charAt(0);
 						} else {
 							// Annual event
@@ -275,28 +326,54 @@ public class FileStorage implements Storage {
 					tempCount = 1;
 				}
 			}
+			Date tempEndPoint = null;
+			if (tempCheckEndPoint) {
+				int tempNextSpace = tempTextWithoutRepeatingInfo.indexOf(' ');
+				if (tempNextSpace > 0) {
+					String tempEndPointString = tempTextWithoutRepeatingInfo.substring(1, tempNextSpace);
+					try {
+						tempEndPoint = dateFormat.parse(tempEndPointString);
+						tempTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, 1) + tempTextWithoutRepeatingInfo.substring(tempNextSpace + 1);
+					} catch (ParseException e) {
+						LOGGER.warn("No endpoint: '" + tempEndPointString + "' in " + anInfo + " Error", e);
+					}
+				}
+			}
+			int tempUnit;
 			switch (tempType) {
 			case 'd':
-				return new UnitAndStep(Calendar.DAY_OF_YEAR, tempCount);
+				tempUnit = Calendar.DAY_OF_YEAR;
+				break;
 			case 'D':
-				return new UnitAndStep(Calendar.DAY_OF_YEAR, tempCount);
+				tempUnit = Calendar.DAY_OF_YEAR;
+				break;
 			case 'w':
-				return new UnitAndStep(Calendar.WEEK_OF_YEAR, tempCount);
+				tempUnit = Calendar.WEEK_OF_YEAR;
+				break;
 			case 'W':
-				return new UnitAndStep(Calendar.WEEK_OF_YEAR, tempCount);
+				tempUnit = Calendar.WEEK_OF_YEAR;
+				break;
 			case 'm':
-				return new UnitAndStep(Calendar.MONTH, tempCount);
+				tempUnit = Calendar.MONTH;
+				break;
 			case 'M':
-				return new UnitAndStep(Calendar.MONTH, tempCount);
+				tempUnit = Calendar.MONTH;
+				break;
 			case 'y':
-				return new UnitAndStep(Calendar.YEAR, tempCount);
+				tempUnit = Calendar.YEAR;
+				break;
 			case 'Y':
-				return new UnitAndStep(Calendar.YEAR, tempCount);
+				tempUnit = Calendar.YEAR;
+				break;
 			default:
+				tempUnit = Calendar.YEAR;
 				break;
 			}
+			UnitAndStep tempUnitAndStep = new UnitAndStep(tempUnit, tempCount, tempTextWithoutRepeatingInfo);
+			tempUnitAndStep.setEndPoint(tempEndPoint);
+			return tempUnitAndStep;
 		}
-		return new UnitAndStep(Calendar.YEAR, 1);
+		return new UnitAndStep(Calendar.YEAR, 1, anInfo);
 	}
 
 	@Override
