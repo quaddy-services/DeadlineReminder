@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.StringReader;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -62,9 +63,6 @@ public class FileStorage implements Storage {
 	private List<Deadline> readDeadlines(Date to, String tempFileName) throws FileNotFoundException, IOException {
 		List<Deadline> tempMatchingDeadlines = new ArrayList<Deadline>();
 		File tempFile = new File(getDirectory().getAbsolutePath() + "/" + tempFileName);
-		if (!tempFile.exists()) {
-			return tempMatchingDeadlines;
-		}
 		BufferedReader tempReader = new BufferedReader(createReader(tempFile));
 		String tempLine;
 		while (null != (tempLine = tempReader.readLine())) {
@@ -80,6 +78,10 @@ public class FileStorage implements Storage {
 	}
 
 	protected Reader createReader(File tempFile) throws FileNotFoundException {
+		if (!tempFile.exists()) {
+			LOGGER.info("File does not exist: " + tempFile.getAbsolutePath());
+			return new StringReader("");
+		}
 		return new FileReader(tempFile);
 	}
 
@@ -126,7 +128,7 @@ public class FileStorage implements Storage {
 
 	/**
 	 * Try to add a time. e.g. *1w 17:00 David Nachhilfe
-	 * 
+	 *
 	 * @param aDate
 	 * @param aInfo
 	 * @return
