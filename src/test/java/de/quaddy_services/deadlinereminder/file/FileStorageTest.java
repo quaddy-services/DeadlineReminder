@@ -38,20 +38,23 @@ public class FileStorageTest extends TestCase {
 	public void testBirthday() {
 		Calendar tempCal = Calendar.getInstance();
 		tempCal.set(Calendar.YEAR, 1970);
-		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
-				+ TWO.format(tempCal.get(Calendar.YEAR)) + "*Stefan";
+		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "."
+				+ TWO.format(tempCal.get(Calendar.MONTH) + 1) + "." + TWO.format(tempCal.get(Calendar.YEAR))
+				+ "*Max Mustermann";
 		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 400);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
 		LOGGER.info(tempDeadlines.toString());
 		assertEquals(2, tempDeadlines.size());
+		assertEquals("*Max Mustermann", tempDeadlines.get(0).getInfo());
 	}
 
 	public void test6Month() {
 		Calendar tempCal = Calendar.getInstance();
-		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
-				+ TWO.format(tempCal.get(Calendar.YEAR)) + "*6m Stefan";
+		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "."
+				+ TWO.format(tempCal.get(Calendar.MONTH) + 1) + "." + TWO.format(tempCal.get(Calendar.YEAR))
+				+ "*6m Stefan";
 		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 400);
@@ -62,8 +65,9 @@ public class FileStorageTest extends TestCase {
 
 	public void testEveryWeek() {
 		Calendar tempCal = Calendar.getInstance();
-		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
-				+ TWO.format(tempCal.get(Calendar.YEAR)) + "*w Week";
+		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "."
+				+ TWO.format(tempCal.get(Calendar.MONTH) + 1) + "." + TWO.format(tempCal.get(Calendar.YEAR))
+				+ "*w Week";
 		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 40);
@@ -74,8 +78,9 @@ public class FileStorageTest extends TestCase {
 
 	public void testEvery1Week() {
 		Calendar tempCal = Calendar.getInstance();
-		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
-				+ TWO.format(tempCal.get(Calendar.YEAR)) + "*1w Week";
+		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "."
+				+ TWO.format(tempCal.get(Calendar.MONTH) + 1) + "." + TWO.format(tempCal.get(Calendar.YEAR))
+				+ "*1w Week";
 		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 40);
@@ -169,8 +174,8 @@ public class FileStorageTest extends TestCase {
 	 *
 	 */
 	private String format(Calendar tempCal) {
-		String tempToDay = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
-				+ TWO.format(tempCal.get(Calendar.YEAR));
+		String tempToDay = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "."
+				+ TWO.format(tempCal.get(Calendar.MONTH) + 1) + "." + TWO.format(tempCal.get(Calendar.YEAR));
 		return tempToDay;
 	}
 

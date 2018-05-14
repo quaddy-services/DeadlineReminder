@@ -316,6 +316,7 @@ public class FileStorage implements Storage {
 						} else {
 							// Annual event
 							tempType = 'Y';
+							tempTextWithoutRepeatingInfo = anInfo;
 						}
 					}
 				} catch (Exception e) {
@@ -333,7 +334,8 @@ public class FileStorage implements Storage {
 					String tempEndPointString = tempTextWithoutRepeatingInfo.substring(1, tempNextSpace);
 					try {
 						tempEndPoint = dateFormat.parse(tempEndPointString);
-						tempTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, 1) + tempTextWithoutRepeatingInfo.substring(tempNextSpace + 1);
+						tempTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, 1)
+								+ tempTextWithoutRepeatingInfo.substring(tempNextSpace + 1);
 					} catch (ParseException e) {
 						LOGGER.warn("No endpoint: '" + tempEndPointString + "' in " + anInfo + " Error", e);
 					}
