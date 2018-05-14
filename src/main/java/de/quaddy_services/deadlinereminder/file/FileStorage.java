@@ -93,6 +93,9 @@ public class FileStorage implements Storage {
 		if (tempLine.startsWith(INFO_PREFIX2)) {
 			return tempDeadlines;
 		}
+		if (tempLine.trim().length() == 0) {
+			return tempDeadlines;
+		}
 		try {
 			String tempDateChars = tempLine.substring(0, 10);
 			tempDateChars = tempDateChars.replace('?', '0');
@@ -114,7 +117,7 @@ public class FileStorage implements Storage {
 				tempDeadlines.add(tempDeadline);
 			}
 		} catch (Exception e) {
-			LOGGER.error("Ignore " + tempLine, e);
+			LOGGER.error("Ignore '" + tempLine + "'", e);
 			if (tempLine.trim().length() > 0) {
 				Deadline tempDeadline = new Deadline();
 				tempDeadline.setWhen(new Date());
