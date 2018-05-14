@@ -90,7 +90,12 @@ public class FileStorageTest extends TestCase {
 		tempTo.add(Calendar.DAY_OF_YEAR, 42);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
 		LOGGER.info(tempDeadlines.toString());
-		assertEquals(9, tempDeadlines.size());
+		if (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY) {
+			// on monday one week less is returned as 23.02.2015 is monday.
+			assertEquals(8, tempDeadlines.size());
+		} else {
+			assertEquals(9, tempDeadlines.size());
+		}
 
 	}
 }
