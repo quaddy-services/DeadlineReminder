@@ -7,6 +7,7 @@ public class Deadline {
 	private String info;
 	private boolean done;
 	private Date repeating;
+	private String textWithoutRepeatingInfo;
 
 	public Date getWhen() {
 		return when;
@@ -54,5 +55,20 @@ public class Deadline {
 
 	public void setRepeating(Date aRepeating) {
 		repeating = aRepeating;
+	}
+
+	public void setTextWithoutRepeatingInfo(String aTextWithoutRepeatingInfo) {
+		textWithoutRepeatingInfo = aTextWithoutRepeatingInfo;
+
+	}
+
+	/**
+	 * @return the textWithoutRepeatingInfo
+	 */
+	public final String getTextWithoutRepeatingInfo() {
+		if (textWithoutRepeatingInfo == null) {
+			return getInfo();
+		}
+		return textWithoutRepeatingInfo;
 	}
 }

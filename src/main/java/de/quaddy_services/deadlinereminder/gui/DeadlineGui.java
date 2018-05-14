@@ -79,7 +79,8 @@ public class DeadlineGui extends JPanel {
 			tempContentPanel.add(new JLabel("No open deadlines in " + aModel.getSourceInfo()), tempGBC);
 		} else {
 			for (final Deadline tempDeadline : tempOpenDeadlines) {
-				String tempText = dateFormat.format(tempDeadline.getWhen()) + ": " + tempDeadline.getInfo();
+				String tempText = dateFormat.format(tempDeadline.getWhen()) + ": "
+						+ tempDeadline.getTextWithoutRepeatingInfo();
 				if (tempDeadline.getRepeating() != null) {
 					tempText += " (" + dateFormat.format(tempDeadline.getRepeating()) + ")";
 				}

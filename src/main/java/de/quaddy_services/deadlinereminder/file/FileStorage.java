@@ -225,7 +225,7 @@ public class FileStorage implements Storage {
 	private void addRepeating(List<Deadline> tempDeadlines, Date tempDate, String tempInfo) {
 		Calendar tempStartingPoint = Calendar.getInstance();
 		UnitAndStep tempStepAndUnit = getStepAndUnit(tempInfo);
-		LOGGER.info("stepAndUnit=" + tempStepAndUnit);
+		LOGGER.debug("stepAndUnit=" + tempStepAndUnit);
 		int tempMaxAddCount;
 		if (tempStepAndUnit.unit == Calendar.YEAR) {
 			tempStartingPoint.add(Calendar.YEAR, -1);
@@ -257,12 +257,12 @@ public class FileStorage implements Storage {
 			tempDateYear = tempCal.get(Calendar.YEAR);
 		}
 		// LOGGER.info("tempCal="+tempCal.getTime());
-		LOGGER.info("tempStartingPoint=" + tempStartingPoint.getTime());
+		LOGGER.debug("tempStartingPoint=" + tempStartingPoint.getTime());
 		int tempAddCount = 0;
 		Date tempEndPoint = tempStepAndUnit.getEndPoint();
 		while (true) {
 			if (tempStartingPoint.before(tempCal)) {
-				LOGGER.info("Match " + tempCal.getTime() + " for " + tempDate + " " + tempInfo);
+				LOGGER.debug("Match " + tempCal.getTime() + " for " + tempDate + " " + tempInfo);
 				Deadline tempDeadline = new Deadline();
 				Date tempWhen = tempCal.getTime();
 				if (tempEndPoint != null && tempWhen.after(tempEndPoint)) {
@@ -270,7 +270,8 @@ public class FileStorage implements Storage {
 				}
 				tempWhen = addTime(tempWhen, tempInfo);
 				tempDeadline.setWhen(tempWhen);
-				tempDeadline.setInfo(tempStepAndUnit.textWithoutRepeatingInfo);
+				tempDeadline.setInfo(tempInfo);
+				tempDeadline.setTextWithoutRepeatingInfo(tempStepAndUnit.textWithoutRepeatingInfo);
 				tempDeadline.setRepeating(tempDate);
 				tempDeadlines.add(tempDeadline);
 				tempAddCount++;
@@ -340,7 +341,9 @@ public class FileStorage implements Storage {
 						tempTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, 1)
 								+ tempTextWithoutRepeatingInfo.substring(tempNextSpace + 1);
 					} catch (ParseException e) {
-						LOGGER.warn("No endpoint: '" + tempEndPointString + "' in " + anInfo + " Error", e);
+						String tempMsg = "No endpoint: '" + tempEndPointString + "' in " + anInfo + " Error";
+						LOGGER.info(tempMsg);
+						LOGGER.debug(tempMsg, e);
 					}
 				}
 			}

@@ -303,10 +303,10 @@ public class GoogleSync {
 		Date startDate;
 		String tempText;
 		if (aDeadline.getWhen().before(tempToday)) {
-			tempText = DATE_FORMAT.format(aDeadline.getWhen()) + "!" + aDeadline.getInfo();
+			tempText = DATE_FORMAT.format(aDeadline.getWhen()) + "!" + aDeadline.getTextWithoutRepeatingInfo();
 			startDate = tempTodayMorning;
 		} else {
-			tempText = aDeadline.getInfo();
+			tempText = aDeadline.getTextWithoutRepeatingInfo();
 			startDate = aDeadline.getWhen();
 		}
 		if (aDeadline.getRepeating() != null) {
