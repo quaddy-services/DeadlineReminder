@@ -114,7 +114,7 @@ public class FileStorage implements Storage {
 				tempDeadlines.add(tempDeadline);
 			}
 		} catch (Exception e) {
-			// e.printStackTrace();
+			LOGGER.error("Ignore " + tempLine, e);
 			if (tempLine.trim().length() > 0) {
 				Deadline tempDeadline = new Deadline();
 				tempDeadline.setWhen(new Date());
@@ -197,6 +197,9 @@ public class FileStorage implements Storage {
 		} else if (tempStepAndUnit.unit == Calendar.WEEK_OF_YEAR) {
 			tempStartingPoint.add(Calendar.WEEK_OF_YEAR, -3);
 			tempMaxAddCount = Math.max(10, 40 / tempStepAndUnit.step);
+		} else if (tempStepAndUnit.unit == Calendar.DAY_OF_YEAR) {
+			tempStartingPoint.add(Calendar.DAY_OF_YEAR, -3);
+			tempMaxAddCount = 30;
 		} else {
 			LOGGER.error("No valid range " + tempInfo);
 			return;
@@ -266,13 +269,17 @@ public class FileStorage implements Storage {
 					}
 				} catch (Exception e) {
 					LOGGER.info("Ignore " + anInfo);
-					LOGGER.warn("Ignore", e);
+					LOGGER.debug("Ignore", e);
 					// Annual event
 					tempType = 'Y';
 					tempCount = 1;
 				}
 			}
 			switch (tempType) {
+			case 'd':
+				return new UnitAndStep(Calendar.DAY_OF_YEAR, tempCount);
+			case 'D':
+				return new UnitAndStep(Calendar.DAY_OF_YEAR, tempCount);
 			case 'w':
 				return new UnitAndStep(Calendar.WEEK_OF_YEAR, tempCount);
 			case 'W':

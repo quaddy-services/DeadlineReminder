@@ -98,4 +98,16 @@ public class FileStorageTest extends TestCase {
 		}
 
 	}
+
+	public void testDaily() {
+		Calendar tempCal = Calendar.getInstance();
+		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
+				+ TWO.format(tempCal.get(Calendar.YEAR)) + "*1d testDaily";
+		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
+		Calendar tempTo = Calendar.getInstance();
+		tempTo.add(Calendar.DAY_OF_YEAR, 40);
+		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
+		LOGGER.info(tempDeadlines.toString());
+		assertEquals(30, tempDeadlines.size());
+	}
 }
