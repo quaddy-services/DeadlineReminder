@@ -139,7 +139,7 @@ public class FileStorage implements Storage {
 	private Date addTime(Date aDate, String aInfo) {
 		Date tempDate = aDate;
 		Date tempTime = null;
-		StringTokenizer tempTokens = new StringTokenizer(aInfo, " ");
+		StringTokenizer tempTokens = new StringTokenizer(aInfo, "* ");
 		while (tempTokens.hasMoreTokens()) {
 			String tempToken = tempTokens.nextToken();
 			if (tempToken.length() > 3 && Character.isDigit(tempToken.charAt(0))) {
@@ -268,7 +268,11 @@ public class FileStorage implements Storage {
 				if (tempEndPoint != null && tempWhen.after(tempEndPoint)) {
 					break;
 				}
-				tempWhen = addTime(tempWhen, tempInfo);
+				if (tempStepAndUnit.textWithoutRepeatingInfo != null) {
+					tempWhen = addTime(tempWhen, tempStepAndUnit.textWithoutRepeatingInfo);
+				} else {
+					tempWhen = addTime(tempWhen, tempInfo);
+				}
 				tempDeadline.setWhen(tempWhen);
 				tempDeadline.setInfo(tempInfo);
 				tempDeadline.setTextWithoutRepeatingInfo(tempStepAndUnit.textWithoutRepeatingInfo);
@@ -338,8 +342,7 @@ public class FileStorage implements Storage {
 					String tempEndPointString = tempTextWithoutRepeatingInfo.substring(1, tempNextSpace);
 					try {
 						tempEndPoint = dateFormat.parse(tempEndPointString);
-						tempTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, 1)
-								+ tempTextWithoutRepeatingInfo.substring(tempNextSpace + 1);
+						tempTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, 1) + tempTextWithoutRepeatingInfo.substring(tempNextSpace + 1);
 					} catch (ParseException e) {
 						String tempMsg = "No endpoint: '" + tempEndPointString + "' in " + anInfo + " Error";
 						LOGGER.info(tempMsg);
