@@ -1,6 +1,5 @@
 package de.quaddy_services.deadlinereminder;
 
-import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Image;
@@ -54,6 +53,7 @@ public class DeadlineReminder {
 	private Model model;
 	private Logger LOGGER = LoggerFactory.getLogger(DeadlineReminder.class);
 	private GoogleSync googleSync;
+	private DeadlineGui tempGUI;
 
 	protected void mainEventQueue() {
 		try {
@@ -61,7 +61,7 @@ public class DeadlineReminder {
 			model = createModel();
 			LOGGER.info(new Date() + ": Found " + model.getOpenDeadlines().size() + " deadlines");
 			googleSync = new GoogleSync();
-			DeadlineGui tempGUI = new DeadlineGui();
+			tempGUI = new DeadlineGui();
 
 			googleSync.setLogListener(new StatusLogListener(tempGUI));
 
@@ -184,15 +184,11 @@ public class DeadlineReminder {
 			lastSyncHour = tempHour;
 			lastSyncSize = model.getOpenDeadlines().size();
 
-			DeadlineGui tempGUI = new DeadlineGui();
 			tempGUI.setModel(model);
-			Container tempContentPane = aFrame.getContentPane();
-			tempContentPane.removeAll();
-			tempContentPane.invalidate();
-			tempContentPane.validate();
-			tempContentPane.add(tempGUI);
-			tempContentPane.invalidate();
-			tempContentPane.validate();
+			tempGUI.invalidate();
+			tempGUI.validate();
+			tempGUI.invalidate();
+			tempGUI.validate();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
