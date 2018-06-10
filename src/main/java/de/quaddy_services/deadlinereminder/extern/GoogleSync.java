@@ -162,6 +162,9 @@ public class GoogleSync {
 			}
 		}
 
+		Calendar tempKeepOld = Calendar.getInstance();
+		tempKeepOld.add(Calendar.MONTH, -12);
+
 		Calendar tempTooFarAway = Calendar.getInstance();
 		tempTooFarAway.add(Calendar.MONTH, 12);
 		List<Event> tempNewEvents = new ArrayList<Event>();
@@ -188,10 +191,14 @@ public class GoogleSync {
 			}
 		}
 		for (Event tempEvent : tempCurrentEvents) {
-			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
-			config(tempDelete).execute();
-			logInfo("Deleted " + tempEvent.getSummary() + " " + tempEvent);
-			slowDown();
+			if (tempEvent.getStart().getDateTime().getValue() < tempKeepOld.getTime().getTime()) {
+				Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
+				config(tempDelete).execute();
+				logInfo("Deleted " + tempEvent.getSummary() + " " + tempEvent);
+				slowDown();
+			} else {
+				// Keep finished event.
+			}
 		}
 		for (Event tempEvent : tempNewEvents) {
 			Event tempResult = config(client.events().insert(tempDeadlineCalendarId, tempEvent)).execute();
@@ -303,7 +310,8 @@ public class GoogleSync {
 		Date startDate;
 		String tempText;
 		if (aDeadline.getWhen().before(tempToday)) {
-			tempText = DATE_FORMAT.format(aDeadline.getWhen()) + "!" + aDeadline.getTextWithoutRepeatingInfo();
+			tempText = "! " + aDeadline.getTextWithoutRepeatingInfo() + " !" + DATE_FORMAT.format(aDeadline.getWhen())
+					+ "!";
 			startDate = tempTodayMorning;
 		} else {
 			tempText = aDeadline.getTextWithoutRepeatingInfo();
