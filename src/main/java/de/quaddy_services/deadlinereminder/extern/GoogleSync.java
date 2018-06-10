@@ -45,6 +45,7 @@ import de.quaddy_services.deadlinereminder.gui.DeadlineGui;
  * 
  */
 public class GoogleSync {
+	private static final String OVERDUE_MARKER = "! ";
 	private static final Logger LOGGER = LoggerFactory.getLogger(GoogleSync.class);
 	private static final boolean DEBUG = false;
 
@@ -163,10 +164,11 @@ public class GoogleSync {
 		}
 
 		Calendar tempKeepOld = Calendar.getInstance();
-		tempKeepOld.add(Calendar.MONTH, -12);
+		tempKeepOld.add(Calendar.YEAR, -10);
 
 		Calendar tempTooFarAway = Calendar.getInstance();
-		tempTooFarAway.add(Calendar.MONTH, 12);
+		tempTooFarAway.add(Calendar.YEAR, 2);
+
 		List<Event> tempNewEvents = new ArrayList<Event>();
 		for (Deadline tempDeadline : aOpenDeadlines) {
 			if (tempDeadline.getWhen().after(tempTooFarAway.getTime())) {
@@ -191,14 +193,26 @@ public class GoogleSync {
 			}
 		}
 		for (Event tempEvent : tempCurrentEvents) {
-			if (tempEvent.getStart().getDateTime().getValue() < tempKeepOld.getTime().getTime()) {
-				Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
-				config(tempDelete).execute();
-				logInfo("Deleted " + tempEvent.getSummary() + " " + tempEvent);
-				slowDown();
+			EventDateTime tempStart = tempEvent.getStart();
+			DateTime tempDate = tempStart.getDate();
+			String tempSummary = tempEvent.getSummary();
+			if (tempSummary.startsWith(OVERDUE_MARKER)) {
+				// Overdue events are deleted and recreated next day. The original event is already kept in calendar.
 			} else {
-				// Keep finished event.
+				if (tempDate != null && tempDate.getValue() > tempKeepOld.getTime().getTime()) {
+					// Keep finished event.
+					continue;
+				}
+				DateTime tempDateTime = tempStart.getDateTime();
+				if (tempDateTime != null && tempDateTime.getValue() > tempKeepOld.getTime().getTime()) {
+					// Keep finished event.
+					continue;
+				}
 			}
+			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
+			config(tempDelete).execute();
+			logInfo("Deleted " + tempSummary + " " + tempEvent);
+			slowDown();
 		}
 		for (Event tempEvent : tempNewEvents) {
 			Event tempResult = config(client.events().insert(tempDeadlineCalendarId, tempEvent)).execute();
@@ -310,8 +324,8 @@ public class GoogleSync {
 		Date startDate;
 		String tempText;
 		if (aDeadline.getWhen().before(tempToday)) {
-			tempText = "! " + aDeadline.getTextWithoutRepeatingInfo() + " !" + DATE_FORMAT.format(aDeadline.getWhen())
-					+ "!";
+			tempText = OVERDUE_MARKER + aDeadline.getTextWithoutRepeatingInfo() + " !"
+					+ DATE_FORMAT.format(aDeadline.getWhen()) + "!";
 			startDate = tempTodayMorning;
 		} else {
 			tempText = aDeadline.getTextWithoutRepeatingInfo();
