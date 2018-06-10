@@ -1,4 +1,8 @@
 echo on
+set java_home=c:\programs\currentJDK
+%java_home%\bin\java -version
+if errorlevel goto noJDK
+
 echo %date% >src/main/resources/version.txt
 del target\DeadlineReminder-SNAPSHOT.zip
 del target\DeadlineReminder-SNAPSHOT.jar
@@ -28,4 +32,15 @@ java -Djava.net.preferIPv4Stack=true -cp .;bin;lib\commons-net-1.4.1.jar;lib\jak
 popd .
 :noq
 rem call mvn clean
+
+goto ende
+
+:noJDK
+echo off
+echo ERROR:
+echo there is no link to the newest JDK in c:\programs\currentJDK
+echo you can create it via c:\Programs\SysinternalsSuite\junction.exe c:\programs\currentjdk "%currentjdk%"
+echo see https://technet.microsoft.com/de-de/sysinternals
+goto ende
+
 :ende
