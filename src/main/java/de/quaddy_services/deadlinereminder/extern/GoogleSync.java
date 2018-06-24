@@ -38,11 +38,11 @@ import de.quaddy_services.deadlinereminder.gui.DeadlineGui;
 
 /**
  * https://code.google.com/apis/console/
- * 
+ *
  * https://console.developers.google.com/apis/credentials?project=api-project-85684967233
- * 
+ *
  * @author User
- * 
+ *
  */
 public class GoogleSync {
 	private static final String OVERDUE_MARKER = "! ";
@@ -129,7 +129,7 @@ public class GoogleSync {
 
 	/**
 	 * https://developers.google.com/google-apps/calendar/
-	 * 
+	 *
 	 * @param aOpenDeadlines
 	 * @throws Exception
 	 */
@@ -140,18 +140,15 @@ public class GoogleSync {
 		/** Global instance of the JSON factory. */
 		JsonFactory JSON_FACTORY = new JacksonFactory();
 		// authorization
-		Credential credential = OAuth2Native.authorize(HTTP_TRANSPORT, JSON_FACTORY, new LocalServerReceiver(),
-				Arrays.asList(CalendarScopes.CALENDAR));
+		Credential credential = OAuth2Native.authorize(HTTP_TRANSPORT, JSON_FACTORY, new LocalServerReceiver(), Arrays.asList(CalendarScopes.CALENDAR));
 		// set up global Calendar instance
-		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(
-				HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName("Google-DeadlineReminder/1.0")
-						.setHttpRequestInitializer(credential).build();
+		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
+				.setApplicationName("Google-DeadlineReminder/1.0").setHttpRequestInitializer(credential).build();
 
 		push(client, aOpenDeadlines);
 	}
 
-	private void push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines)
-			throws IOException {
+	private void push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines) throws IOException {
 
 		CalendarList tempCalendarList = config(client.calendarList().list()).execute();
 		String tempDeadlineCalendarId = null;
@@ -164,7 +161,7 @@ public class GoogleSync {
 		}
 
 		Calendar tempKeepOld = Calendar.getInstance();
-		tempKeepOld.add(Calendar.YEAR, -10);
+		tempKeepOld.add(Calendar.YEAR, -2);
 
 		Calendar tempTooFarAway = Calendar.getInstance();
 		tempTooFarAway.add(Calendar.YEAR, 2);
@@ -192,6 +189,7 @@ public class GoogleSync {
 				}
 			}
 		}
+		long tempNow = System.currentTimeMillis();
 		for (Event tempEvent : tempCurrentEvents) {
 			EventDateTime tempStart = tempEvent.getStart();
 			DateTime tempDate = tempStart.getDate();
@@ -199,12 +197,12 @@ public class GoogleSync {
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Overdue events are deleted and recreated next day. The original event is already kept in calendar.
 			} else {
-				if (tempDate != null && tempDate.getValue() > tempKeepOld.getTime().getTime()) {
+				if (tempDate != null && tempKeepOld.getTime().getTime() < tempDate.getValue() && tempDate.getValue() < tempNow) {
 					// Keep finished event.
 					continue;
 				}
 				DateTime tempDateTime = tempStart.getDateTime();
-				if (tempDateTime != null && tempDateTime.getValue() > tempKeepOld.getTime().getTime()) {
+				if (tempDateTime != null && tempKeepOld.getTime().getTime() < tempDateTime.getValue() && tempDateTime.getValue() < tempNow) {
 					// Keep finished event.
 					continue;
 				}
@@ -230,7 +228,7 @@ public class GoogleSync {
 
 	/**
 	 * Avoid
-	 * 
+	 *
 	 * com.google.api.client.googleapis.json.GoogleJsonResponseException: 403 Forbidden
 	{
 	"code" : 403,
@@ -279,8 +277,7 @@ public class GoogleSync {
 		return false;
 	}
 
-	private ArrayList<Event> getCurrentItems(com.google.api.services.calendar.Calendar client,
-			String tempDeadlineCalendarId) throws IOException {
+	private ArrayList<Event> getCurrentItems(com.google.api.services.calendar.Calendar client, String tempDeadlineCalendarId) throws IOException {
 		com.google.api.services.calendar.Calendar.Events.List tempList = client.events().list(tempDeadlineCalendarId);
 		ArrayList<Event> tempCurrentEvents = new ArrayList<Event>();
 		while (true) {
@@ -324,8 +321,7 @@ public class GoogleSync {
 		Date startDate;
 		String tempText;
 		if (aDeadline.getWhen().before(tempToday)) {
-			tempText = OVERDUE_MARKER + aDeadline.getTextWithoutRepeatingInfo() + " !"
-					+ DATE_FORMAT.format(aDeadline.getWhen()) + "!";
+			tempText = OVERDUE_MARKER + aDeadline.getTextWithoutRepeatingInfo() + " !" + DATE_FORMAT.format(aDeadline.getWhen()) + "!";
 			startDate = tempTodayMorning;
 		} else {
 			tempText = aDeadline.getTextWithoutRepeatingInfo();
@@ -338,10 +334,8 @@ public class GoogleSync {
 		tempCal.setTime(startDate);
 		boolean tempIsWholeDayEvent = tempCal.get(Calendar.HOUR_OF_DAY) == 0 && tempCal.get(Calendar.MINUTE) == 0;
 		if (tempIsWholeDayEvent) {
-			event.setStart(
-					new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
-			event.setEnd(new EventDateTime()
-					.setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000).toString())));
+			event.setStart(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
+			event.setEnd(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000).toString())));
 		} else {
 			Date endDate = new Date(startDate.getTime() + 3600000);
 			DateTime start = new DateTime(startDate, TimeZone.getDefault());
