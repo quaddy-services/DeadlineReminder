@@ -33,7 +33,8 @@ import de.quaddy_services.deadlinereminder.Deadline;
 import de.quaddy_services.deadlinereminder.Model;
 
 public class DeadlineGui extends JPanel {
-	public static DateFormat dateFormat = new SimpleDateFormat("EE dd.MM.yyyy");
+	public static DateFormat dateFormatWithDay = new SimpleDateFormat("EE dd.MM.yyyy");
+	public static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
 	private static final Logger LOGGER = LoggerFactory.getLogger(DeadlineGui.class);
 
 	private JPanel statusPanel = new JPanel();
@@ -51,6 +52,8 @@ public class DeadlineGui extends JPanel {
 
 		JPanel tempContentPanel = new JPanel();
 		JScrollPane tempScroll = new JScrollPane(tempContentPanel);
+		// For mouseWheele:
+		tempScroll.getVerticalScrollBar().setUnitIncrement(20);
 		add(tempScroll, tempGBC1);
 
 		tempGBC1.gridy++;
@@ -79,9 +82,11 @@ public class DeadlineGui extends JPanel {
 			tempContentPanel.add(new JLabel("No open deadlines in " + aModel.getSourceInfo()), tempGBC);
 		} else {
 			for (final Deadline tempDeadline : tempOpenDeadlines) {
-				String tempText = dateFormat.format(tempDeadline.getWhen()) + ": "
+				String tempText = dateFormatWithDay.format(tempDeadline.getWhen()) + ": "
 						+ tempDeadline.getTextWithoutRepeatingInfo();
-				if (tempDeadline.getRepeating() != null) {
+				if (tempDeadline.getEndPoint() != null) {
+					tempText += " (-" + dateFormat.format(tempDeadline.getEndPoint()) + ")";
+				} else if (tempDeadline.getRepeating() != null) {
 					tempText += " (" + dateFormat.format(tempDeadline.getRepeating()) + ")";
 				}
 				JCheckBox tempCheckBox = new JCheckBox(tempText);
