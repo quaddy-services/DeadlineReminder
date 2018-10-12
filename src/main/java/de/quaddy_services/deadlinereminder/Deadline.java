@@ -3,11 +3,16 @@ package de.quaddy_services.deadlinereminder;
 import java.util.Date;
 
 public class Deadline {
+	public Deadline() {
+		super();
+	}
+
 	private Date when;
 	private String info;
 	private boolean done;
 	private Date repeating;
 	private String textWithoutRepeatingInfo;
+	private Date endPoint;
 
 	public Date getWhen() {
 		return when;
@@ -33,9 +38,13 @@ public class Deadline {
 		this.done = done;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
 	@Override
 	public String toString() {
-		return when + ": " + info + " " + done;
+		return "Deadline [when=" + when + ", info=" + info + ", done=" + done + ", repeating=" + repeating
+				+ ", textWithoutRepeatingInfo=" + textWithoutRepeatingInfo + ", endPoint=" + endPoint + "]";
 	}
 
 	@Override
@@ -70,5 +79,18 @@ public class Deadline {
 			return getInfo();
 		}
 		return textWithoutRepeatingInfo;
+	}
+
+	public void setEndPoint(Date aEndPoint) {
+		endPoint = aEndPoint;
+		// TODO Auto-generated method stub
+
+	}
+
+	/**
+	 * @return the endPoint
+	 */
+	public final Date getEndPoint() {
+		return endPoint;
 	}
 }

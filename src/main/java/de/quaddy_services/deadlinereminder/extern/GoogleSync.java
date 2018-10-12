@@ -140,15 +140,18 @@ public class GoogleSync {
 		/** Global instance of the JSON factory. */
 		JsonFactory JSON_FACTORY = new JacksonFactory();
 		// authorization
-		Credential credential = OAuth2Native.authorize(HTTP_TRANSPORT, JSON_FACTORY, new LocalServerReceiver(), Arrays.asList(CalendarScopes.CALENDAR));
+		Credential credential = OAuth2Native.authorize(HTTP_TRANSPORT, JSON_FACTORY, new LocalServerReceiver(),
+				Arrays.asList(CalendarScopes.CALENDAR));
 		// set up global Calendar instance
-		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
-				.setApplicationName("Google-DeadlineReminder/1.0").setHttpRequestInitializer(credential).build();
+		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(
+				HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName("Google-DeadlineReminder/1.0")
+						.setHttpRequestInitializer(credential).build();
 
 		push(client, aOpenDeadlines);
 	}
 
-	private void push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines) throws IOException {
+	private void push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines)
+			throws IOException {
 
 		CalendarList tempCalendarList = config(client.calendarList().list()).execute();
 		String tempDeadlineCalendarId = null;
@@ -197,12 +200,14 @@ public class GoogleSync {
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Overdue events are deleted and recreated next day. The original event is already kept in calendar.
 			} else {
-				if (tempDate != null && tempKeepOld.getTime().getTime() < tempDate.getValue() && tempDate.getValue() < tempNow) {
+				if (tempDate != null && tempKeepOld.getTime().getTime() < tempDate.getValue()
+						&& tempDate.getValue() < tempNow) {
 					// Keep finished event.
 					continue;
 				}
 				DateTime tempDateTime = tempStart.getDateTime();
-				if (tempDateTime != null && tempKeepOld.getTime().getTime() < tempDateTime.getValue() && tempDateTime.getValue() < tempNow) {
+				if (tempDateTime != null && tempKeepOld.getTime().getTime() < tempDateTime.getValue()
+						&& tempDateTime.getValue() < tempNow) {
 					// Keep finished event.
 					continue;
 				}
@@ -277,7 +282,8 @@ public class GoogleSync {
 		return false;
 	}
 
-	private ArrayList<Event> getCurrentItems(com.google.api.services.calendar.Calendar client, String tempDeadlineCalendarId) throws IOException {
+	private ArrayList<Event> getCurrentItems(com.google.api.services.calendar.Calendar client,
+			String tempDeadlineCalendarId) throws IOException {
 		com.google.api.services.calendar.Calendar.Events.List tempList = client.events().list(tempDeadlineCalendarId);
 		ArrayList<Event> tempCurrentEvents = new ArrayList<Event>();
 		while (true) {
@@ -321,21 +327,26 @@ public class GoogleSync {
 		Date startDate;
 		String tempText;
 		if (aDeadline.getWhen().before(tempToday)) {
-			tempText = OVERDUE_MARKER + aDeadline.getTextWithoutRepeatingInfo() + " !" + DATE_FORMAT.format(aDeadline.getWhen()) + "!";
+			tempText = OVERDUE_MARKER + aDeadline.getTextWithoutRepeatingInfo() + " !"
+					+ DATE_FORMAT.format(aDeadline.getWhen()) + "!";
 			startDate = tempTodayMorning;
 		} else {
 			tempText = aDeadline.getTextWithoutRepeatingInfo();
 			startDate = aDeadline.getWhen();
 		}
-		if (aDeadline.getRepeating() != null) {
-			tempText += " (" + DeadlineGui.dateFormat.format(aDeadline.getRepeating()) + ")";
+		if (aDeadline.getEndPoint() != null) {
+			tempText += " (-" + DeadlineGui.dateFormatWithDay.format(aDeadline.getEndPoint()) + ")";
+		} else if (aDeadline.getRepeating() != null) {
+			tempText += " (" + DeadlineGui.dateFormatWithDay.format(aDeadline.getRepeating()) + ")";
 		}
 		event.setSummary(tempText);
 		tempCal.setTime(startDate);
 		boolean tempIsWholeDayEvent = tempCal.get(Calendar.HOUR_OF_DAY) == 0 && tempCal.get(Calendar.MINUTE) == 0;
 		if (tempIsWholeDayEvent) {
-			event.setStart(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
-			event.setEnd(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000).toString())));
+			event.setStart(
+					new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
+			event.setEnd(new EventDateTime()
+					.setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000).toString())));
 		} else {
 			Date endDate = new Date(startDate.getTime() + 3600000);
 			DateTime start = new DateTime(startDate, TimeZone.getDefault());
