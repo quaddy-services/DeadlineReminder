@@ -277,6 +277,7 @@ public class FileStorage implements Storage {
 				tempDeadline.setInfo(tempInfo);
 				tempDeadline.setTextWithoutRepeatingInfo(tempStepAndUnit.textWithoutRepeatingInfo);
 				tempDeadline.setRepeating(tempDate);
+				tempDeadline.setEndPoint(tempEndPoint);
 				tempDeadlines.add(tempDeadline);
 				tempAddCount++;
 				if (tempAddCount >= tempMaxAddCount) {
@@ -342,7 +343,8 @@ public class FileStorage implements Storage {
 					String tempEndPointString = tempTextWithoutRepeatingInfo.substring(1, tempNextSpace);
 					try {
 						tempEndPoint = dateFormat.parse(tempEndPointString);
-						tempTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, 1) + tempTextWithoutRepeatingInfo.substring(tempNextSpace + 1);
+						tempTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, 1)
+								+ tempTextWithoutRepeatingInfo.substring(tempNextSpace + 1);
 					} catch (ParseException e) {
 						String tempMsg = "No endpoint: '" + tempEndPointString + "' in " + anInfo + " Error";
 						LOGGER.info(tempMsg);
