@@ -224,15 +224,16 @@ public class GoogleSync {
 		for (Event tempEvent : tempCurrentEvents) {
 			String tempSummary = tempEvent.getSummary();
 			EventDateTime tempStart = tempEvent.getStart();
-			DateTime tempDate = tempStart.getDate();
+
 			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
 			config(tempDelete).execute();
-			logInfo("Deleted " + tempSummary + " " + tempStart + " " + tempEvent);
+			logInfo("Deleted " + tempStart + " " + tempSummary + " " + tempEvent);
 			slowDown();
 		}
 		for (Event tempEvent : tempNewEvents) {
+			EventDateTime tempStart = tempEvent.getStart();
 			Event tempResult = config(client.events().insert(tempDeadlineCalendarId, tempEvent)).execute();
-			logInfo("Added " + tempEvent.getSummary() + " " + tempResult);
+			logInfo("Added " + tempStart + " " + tempEvent.getSummary() + " " + tempResult);
 			slowDown();
 		}
 	}
