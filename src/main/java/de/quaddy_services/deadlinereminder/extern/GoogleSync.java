@@ -177,23 +177,10 @@ public class GoogleSync {
 		logInfo("Matching local events: " + tempNewEvents.size());
 		ArrayList<Event> tempCurrentEvents;
 		tempCurrentEvents = getCurrentItems(client, tempDeadlineCalendarId);
-		logInfo("Already at Google: " + tempCurrentEvents.size());
+		logInfo("Already at Google (including history): " + tempCurrentEvents.size());
 		long tempNow = System.currentTimeMillis();
 		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
 			Event tempEvent = iCurrent.next();
-			boolean tempRemoved = false;
-			for (Iterator<Event> iNew = tempNewEvents.iterator(); iNew.hasNext();) {
-				Event tempNewEvent = iNew.next();
-				if (isSame(tempEvent, tempNewEvent)) {
-					iCurrent.remove();
-					iNew.remove();
-					tempRemoved = true;
-					break;
-				}
-			}
-			if (tempRemoved) {
-				continue;
-			}
 			EventDateTime tempStart = tempEvent.getStart();
 			DateTime tempDate = tempStart.getDate();
 			String tempSummary = tempEvent.getSummary();
@@ -213,13 +200,34 @@ public class GoogleSync {
 					continue;
 				}
 			}
+		}
+		logInfo("Already at Google to be synced: " + tempCurrentEvents.size());
+		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
+			Event tempEvent = iCurrent.next();
+			boolean tempRemoved = false;
+			for (Iterator<Event> iNew = tempNewEvents.iterator(); iNew.hasNext();) {
+				Event tempNewEvent = iNew.next();
+				if (isSame(tempEvent, tempNewEvent)) {
+					iCurrent.remove();
+					iNew.remove();
+					tempRemoved = true;
+					break;
+				}
+			}
+			if (tempRemoved) {
+				continue;
+			}
+			EventDateTime tempStart = tempEvent.getStart();
+			String tempSummary = tempEvent.getSummary();
 			logInfo("No matching current event found for Google=" + tempStart + " " + tempSummary);
 		}
 		for (Event tempEvent : tempCurrentEvents) {
 			String tempSummary = tempEvent.getSummary();
+			EventDateTime tempStart = tempEvent.getStart();
+			DateTime tempDate = tempStart.getDate();
 			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
 			config(tempDelete).execute();
-			logInfo("Deleted " + tempSummary + " " + tempEvent);
+			logInfo("Deleted " + tempSummary + " " + tempStart + " " + tempEvent);
 			slowDown();
 		}
 		for (Event tempEvent : tempNewEvents) {
