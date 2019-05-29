@@ -1,7 +1,7 @@
 echo on
 set java_home=c:\programs\currentJDK
 %java_home%\bin\java -version
-if errorlevel goto noJDK
+if %errorlevel% == 1 goto noJDK
 
 echo %date% >src/main/resources/version.txt
 del target\DeadlineReminder-SNAPSHOT.zip

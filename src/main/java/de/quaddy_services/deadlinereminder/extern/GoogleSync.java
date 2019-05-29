@@ -140,18 +140,15 @@ public class GoogleSync {
 		/** Global instance of the JSON factory. */
 		JsonFactory JSON_FACTORY = new JacksonFactory();
 		// authorization
-		Credential credential = OAuth2Native.authorize(HTTP_TRANSPORT, JSON_FACTORY, new LocalServerReceiver(),
-				Arrays.asList(CalendarScopes.CALENDAR));
+		Credential credential = OAuth2Native.authorize(HTTP_TRANSPORT, JSON_FACTORY, new LocalServerReceiver(), Arrays.asList(CalendarScopes.CALENDAR));
 		// set up global Calendar instance
-		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(
-				HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName("Google-DeadlineReminder/1.0")
-						.setHttpRequestInitializer(credential).build();
+		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
+				.setApplicationName("Google-DeadlineReminder/1.0").setHttpRequestInitializer(credential).build();
 
 		push(client, aOpenDeadlines);
 	}
 
-	private void push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines)
-			throws IOException {
+	private void push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines) throws IOException {
 
 		CalendarList tempCalendarList = config(client.calendarList().list()).execute();
 		String tempDeadlineCalendarId = null;
@@ -181,6 +178,7 @@ public class GoogleSync {
 		ArrayList<Event> tempCurrentEvents;
 		tempCurrentEvents = getCurrentItems(client, tempDeadlineCalendarId);
 		logInfo("Already at Google: " + tempCurrentEvents.size());
+		long tempNow = System.currentTimeMillis();
 		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
 			Event tempEvent = iCurrent.next();
 			for (Iterator<Event> iNew = tempNewEvents.iterator(); iNew.hasNext();) {
@@ -191,27 +189,29 @@ public class GoogleSync {
 					break;
 				}
 			}
-		}
-		long tempNow = System.currentTimeMillis();
-		for (Event tempEvent : tempCurrentEvents) {
 			EventDateTime tempStart = tempEvent.getStart();
 			DateTime tempDate = tempStart.getDate();
 			String tempSummary = tempEvent.getSummary();
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
-				// Overdue events are deleted and recreated next day. The original event is already kept in calendar.
+				// Overdue events are deleted and recreated next day. The original event is
+				// already kept in calendar.
 			} else {
-				if (tempDate != null && tempKeepOld.getTime().getTime() < tempDate.getValue()
-						&& tempDate.getValue() < tempNow) {
+				if (tempDate != null && tempKeepOld.getTime().getTime() < tempDate.getValue() && tempDate.getValue() < tempNow) {
 					// Keep finished event.
+					iCurrent.remove();
 					continue;
 				}
 				DateTime tempDateTime = tempStart.getDateTime();
-				if (tempDateTime != null && tempKeepOld.getTime().getTime() < tempDateTime.getValue()
-						&& tempDateTime.getValue() < tempNow) {
+				if (tempDateTime != null && tempKeepOld.getTime().getTime() < tempDateTime.getValue() && tempDateTime.getValue() < tempNow) {
 					// Keep finished event.
+					iCurrent.remove();
 					continue;
 				}
 			}
+			logInfo("No matching current event found for Google=" + tempStart + " " + tempSummary);
+		}
+		for (Event tempEvent : tempCurrentEvents) {
+			String tempSummary = tempEvent.getSummary();
 			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
 			config(tempDelete).execute();
 			logInfo("Deleted " + tempSummary + " " + tempEvent);
@@ -234,16 +234,11 @@ public class GoogleSync {
 	/**
 	 * Avoid
 	 *
-	 * com.google.api.client.googleapis.json.GoogleJsonResponseException: 403 Forbidden
-	{
-	"code" : 403,
-	"errors" : [ {
-	"domain" : "usageLimits",
-	"message" : "Rate Limit Exceeded",
-	"reason" : "rateLimitExceeded"
-	} ],
-	"message" : "Rate Limit Exceeded"
-	
+	 * com.google.api.client.googleapis.json.GoogleJsonResponseException: 403
+	 * Forbidden { "code" : 403, "errors" : [ { "domain" : "usageLimits", "message"
+	 * : "Rate Limit Exceeded", "reason" : "rateLimitExceeded" } ], "message" :
+	 * "Rate Limit Exceeded"
+	 * 
 	 */
 	private void slowDown() {
 		try {
@@ -260,30 +255,36 @@ public class GoogleSync {
 		}
 	}
 
-	private boolean isSame(Event aEvent, Event aNewEvent) {
-		if (aEvent.getSummary().equals(aNewEvent.getSummary())) {
-			EventDateTime tempOldStart = aEvent.getStart();
+	private boolean isSame(Event aOldEvent, Event aNewEvent) {
+		String tempOldSummary = aOldEvent.getSummary();
+		if (tempOldSummary.equals(aNewEvent.getSummary())) {
+			EventDateTime tempOldStart = aOldEvent.getStart();
 			DateTime tempDT1 = tempOldStart.getDateTime();
 			EventDateTime tempNewStart = aNewEvent.getStart();
 			DateTime tempDT2 = tempNewStart.getDateTime();
-			if (tempDT1 != null && tempDT2 != null && tempDT1.equals(tempDT2)) {
-				return true;
+			if (tempDT1 != null && tempDT2 != null) {
+				if (tempDT1.equals(tempDT2)) {
+					return true;
+				}
+				logInfo("Same summary " + tempOldSummary + " but different startdate: " + tempDT1 + " " + tempDT2);
 			}
 			DateTime tempOldStartDate = tempOldStart.getDate();
 			DateTime tempNewStartDate = tempNewStart.getDate();
 			if (tempOldStartDate != null && tempNewStartDate != null) {
 				String tempD1 = tempOldStartDate.toString();
 				String tempD2 = tempNewStartDate.toString();
-				if (tempD1 != null && tempD2 != null && tempD1.equals(tempD2)) {
-					return true;
+				if (tempD1 != null && tempD2 != null) {
+					if (tempD1.equals(tempD2)) {
+						return true;
+					}
+					logInfo("Same summary " + tempOldSummary + " but different date: " + tempDT1 + " " + tempDT2);
 				}
 			}
 		}
 		return false;
 	}
 
-	private ArrayList<Event> getCurrentItems(com.google.api.services.calendar.Calendar client,
-			String tempDeadlineCalendarId) throws IOException {
+	private ArrayList<Event> getCurrentItems(com.google.api.services.calendar.Calendar client, String tempDeadlineCalendarId) throws IOException {
 		com.google.api.services.calendar.Calendar.Events.List tempList = client.events().list(tempDeadlineCalendarId);
 		ArrayList<Event> tempCurrentEvents = new ArrayList<Event>();
 		while (true) {
@@ -327,8 +328,7 @@ public class GoogleSync {
 		Date startDate;
 		String tempText;
 		if (aDeadline.getWhen().before(tempToday)) {
-			tempText = OVERDUE_MARKER + aDeadline.getTextWithoutRepeatingInfo() + " !"
-					+ DATE_FORMAT.format(aDeadline.getWhen()) + "!";
+			tempText = OVERDUE_MARKER + aDeadline.getTextWithoutRepeatingInfo() + " !" + DATE_FORMAT.format(aDeadline.getWhen()) + "!";
 			startDate = tempTodayMorning;
 		} else {
 			tempText = aDeadline.getTextWithoutRepeatingInfo();
@@ -343,10 +343,8 @@ public class GoogleSync {
 		tempCal.setTime(startDate);
 		boolean tempIsWholeDayEvent = tempCal.get(Calendar.HOUR_OF_DAY) == 0 && tempCal.get(Calendar.MINUTE) == 0;
 		if (tempIsWholeDayEvent) {
-			event.setStart(
-					new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
-			event.setEnd(new EventDateTime()
-					.setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000).toString())));
+			event.setStart(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
+			event.setEnd(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000).toString())));
 		} else {
 			Date endDate = new Date(startDate.getTime() + 3600000);
 			DateTime start = new DateTime(startDate, TimeZone.getDefault());
