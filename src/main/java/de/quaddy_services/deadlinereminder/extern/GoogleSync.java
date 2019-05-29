@@ -181,13 +181,18 @@ public class GoogleSync {
 		long tempNow = System.currentTimeMillis();
 		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
 			Event tempEvent = iCurrent.next();
+			boolean tempRemoved = false;
 			for (Iterator<Event> iNew = tempNewEvents.iterator(); iNew.hasNext();) {
 				Event tempNewEvent = iNew.next();
 				if (isSame(tempEvent, tempNewEvent)) {
 					iCurrent.remove();
 					iNew.remove();
+					tempRemoved = true;
 					break;
 				}
+			}
+			if (tempRemoved) {
+				continue;
 			}
 			EventDateTime tempStart = tempEvent.getStart();
 			DateTime tempDate = tempStart.getDate();
