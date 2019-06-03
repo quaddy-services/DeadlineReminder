@@ -39,70 +39,77 @@ public class FileStorageTest extends TestCase {
 	public void testBirthday() {
 		Calendar tempCal = Calendar.getInstance();
 		tempCal.set(Calendar.YEAR, 1970);
-		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "."
-				+ TWO.format(tempCal.get(Calendar.MONTH) + 1) + "." + TWO.format(tempCal.get(Calendar.YEAR))
-				+ "*Max Mustermann";
+		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
+				+ TWO.format(tempCal.get(Calendar.YEAR)) + "*Max Mustermann";
 		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 400);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		LOGGER.info(tempDeadlines.toString());
+		logDeadlines(tempDeadlines);
 		assertEquals(2, tempDeadlines.size());
 		assertEquals("*Max Mustermann", tempDeadlines.get(0).getInfo());
 	}
 
 	public void test6Month() {
 		Calendar tempCal = Calendar.getInstance();
-		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "."
-				+ TWO.format(tempCal.get(Calendar.MONTH) + 1) + "." + TWO.format(tempCal.get(Calendar.YEAR))
-				+ "*6m Stefan";
+		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
+				+ TWO.format(tempCal.get(Calendar.YEAR)) + "*6m Stefan";
 		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 400);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		LOGGER.info(tempDeadlines.toString());
+		logDeadlines(tempDeadlines);
 		assertEquals(3, tempDeadlines.size());
 	}
 
 	public void testEveryWeek() {
 		Calendar tempCal = Calendar.getInstance();
-		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "."
-				+ TWO.format(tempCal.get(Calendar.MONTH) + 1) + "." + TWO.format(tempCal.get(Calendar.YEAR))
-				+ "*w Week";
+		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
+				+ TWO.format(tempCal.get(Calendar.YEAR)) + "*w Week";
 		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 40);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		LOGGER.info(tempDeadlines.toString());
+		logDeadlines(tempDeadlines);
 		assertEquals(6, tempDeadlines.size());
 	}
 
 	public void testEvery1Week() {
 		Calendar tempCal = Calendar.getInstance();
-		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "."
-				+ TWO.format(tempCal.get(Calendar.MONTH) + 1) + "." + TWO.format(tempCal.get(Calendar.YEAR))
-				+ "*1w Week";
+		String tempText = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
+				+ TWO.format(tempCal.get(Calendar.YEAR)) + "*1w Week";
 		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 40);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		LOGGER.info(tempDeadlines.toString());
+		logDeadlines(tempDeadlines);
 		assertEquals(6, tempDeadlines.size());
 	}
 
 	public void testPastWeek() {
-		TestFileStorage tempTestFileStorage = new TestFileStorage("23.02.2015*1w 16:00 Lisa Reitstunde");
+		TestFileStorage tempTestFileStorage = new TestFileStorage("18.03.2019*1w 16:00 Lisa Reitstunde");
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 42);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		LOGGER.info(tempDeadlines.toString());
+		logDeadlines(tempDeadlines);
+		assertEquals(9, tempDeadlines.size());
+		/*
 		if (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY) {
-			// on monday one week less is returned as 23.02.2015 is monday.
-			assertEquals(8, tempDeadlines.size());
+			// on monday one week less is returned as 18.02.2019 is monday.
+			assertEquals(8, tempDeadlines.size()); 
 		} else {
 			assertEquals(9, tempDeadlines.size());
 		}
+		*/
 
+	}
+
+	private void logDeadlines(List<Deadline> tempDeadlines) {
+		LOGGER.info(tempDeadlines.size() + " deadlines:");
+		for (Deadline tempDeadline : tempDeadlines) {
+			LOGGER.info(tempDeadline.toString());
+		}
+		LOGGER.info(".");
 	}
 
 	public void testDaily() {
@@ -112,7 +119,7 @@ public class FileStorageTest extends TestCase {
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 40);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		LOGGER.info(tempDeadlines.toString());
+		logDeadlines(tempDeadlines);
 		assertEquals(30, tempDeadlines.size());
 		assertEquals("*testDaily", tempDeadlines.get(0).getTextWithoutRepeatingInfo());
 		assertEquals("*1d testDaily", tempDeadlines.get(0).getInfo());
@@ -129,7 +136,7 @@ public class FileStorageTest extends TestCase {
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 40);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		LOGGER.info(tempDeadlines.toString());
+		logDeadlines(tempDeadlines);
 		assertEquals(30, tempDeadlines.size());
 		assertEquals("*11:00 testDaily", tempDeadlines.get(0).getTextWithoutRepeatingInfo());
 		assertEquals("*1d 11:00 testDaily", tempDeadlines.get(0).getInfo());
@@ -146,7 +153,7 @@ public class FileStorageTest extends TestCase {
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 40);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		LOGGER.info(tempDeadlines.toString());
+		logDeadlines(tempDeadlines);
 		assertEquals(4, tempDeadlines.size());
 		assertEquals("*testDaily", tempDeadlines.get(0).getTextWithoutRepeatingInfo());
 		assertEquals("*11d testDaily", tempDeadlines.get(0).getInfo());
@@ -162,7 +169,7 @@ public class FileStorageTest extends TestCase {
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 40);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		LOGGER.info(tempDeadlines.toString());
+		logDeadlines(tempDeadlines);
 		assertEquals(11, tempDeadlines.size());
 		assertEquals("*testDailyWithEnd", tempDeadlines.get(0).getTextWithoutRepeatingInfo());
 		assertEquals("*1d-" + tempTenDays + " testDailyWithEnd", tempDeadlines.get(0).getInfo());
@@ -182,7 +189,7 @@ public class FileStorageTest extends TestCase {
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 40);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		LOGGER.info(tempDeadlines.toString());
+		logDeadlines(tempDeadlines);
 		assertEquals(11, tempDeadlines.size());
 		assertEquals("*11:00 testDailyWithEnd", tempDeadlines.get(0).getTextWithoutRepeatingInfo());
 		Date tempWhen = tempDeadlines.get(0).getWhen();
@@ -196,8 +203,8 @@ public class FileStorageTest extends TestCase {
 	 *
 	 */
 	private String format(Calendar tempCal) {
-		String tempToDay = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "."
-				+ TWO.format(tempCal.get(Calendar.MONTH) + 1) + "." + TWO.format(tempCal.get(Calendar.YEAR));
+		String tempToDay = TWO.format(tempCal.get(Calendar.DAY_OF_MONTH)) + "." + TWO.format(tempCal.get(Calendar.MONTH) + 1) + "."
+				+ TWO.format(tempCal.get(Calendar.YEAR));
 		return tempToDay;
 	}
 
