@@ -43,19 +43,45 @@ public class Deadline {
 	 */
 	@Override
 	public String toString() {
-		return "Deadline [when=" + when + ", info=" + info + ", done=" + done + ", repeating=" + repeating
-				+ ", textWithoutRepeatingInfo=" + textWithoutRepeatingInfo + ", endPoint=" + endPoint + "]";
+		return "Deadline [when=" + when + ", info=" + info + ", done=" + done + ", repeating=" + repeating + ", textWithoutRepeatingInfo="
+				+ textWithoutRepeatingInfo + ", endPoint=" + endPoint + "]";
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
 	@Override
 	public int hashCode() {
-		return when.hashCode() + info.hashCode();
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((info == null) ? 0 : info.hashCode());
+		result = prime * result + ((when == null) ? 0 : when.hashCode());
+		return result;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
 	@Override
 	public boolean equals(Object obj) {
-		Deadline tempOther = (Deadline) obj;
-		return when.equals(tempOther.when) && info.equals(tempOther.info);
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Deadline other = (Deadline) obj;
+		if (info == null) {
+			if (other.info != null)
+				return false;
+		} else if (!info.equals(other.info))
+			return false;
+		if (when == null) {
+			if (other.when != null)
+				return false;
+		} else if (!when.equals(other.when))
+			return false;
+		return true;
 	}
 
 	public Date getRepeating() {
@@ -83,8 +109,6 @@ public class Deadline {
 
 	public void setEndPoint(Date aEndPoint) {
 		endPoint = aEndPoint;
-		// TODO Auto-generated method stub
-
 	}
 
 	/**
