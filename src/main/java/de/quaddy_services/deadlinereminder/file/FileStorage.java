@@ -343,8 +343,7 @@ public class FileStorage implements Storage {
 					String tempEndPointString = tempTextWithoutRepeatingInfo.substring(1, tempNextSpace);
 					try {
 						tempEndPoint = dateFormat.parse(tempEndPointString);
-						tempTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, 1)
-								+ tempTextWithoutRepeatingInfo.substring(tempNextSpace + 1);
+						tempTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, 1) + tempTextWithoutRepeatingInfo.substring(tempNextSpace + 1);
 					} catch (ParseException e) {
 						String tempMsg = "No endpoint: '" + tempEndPointString + "' in " + anInfo + " Error";
 						LOGGER.info(tempMsg);
@@ -399,15 +398,14 @@ public class FileStorage implements Storage {
 				}
 			}
 			if (tempDones.size() > 0) {
-				FileWriter tempFileWriter = new FileWriter(getDirectory() + "/" + TERMIN_DONE_TXT, true);
-				PrintWriter tempDone = new PrintWriter(new BufferedWriter(tempFileWriter));
-				tempDone.println(INFO_PREFIX + new Date());
-				for (Deadline tempDeadline : tempDones) {
-					String tempLine = dateFormat.format(tempDeadline.getWhen()) + tempDeadline.getInfo();
-					tempDone.println(tempLine);
-					LOGGER.info(new Date() + ": Confirmed: '" + tempLine + "'");
+				try (PrintWriter tempDone = new PrintWriter(new BufferedWriter(new FileWriter(getDirectory() + "/" + TERMIN_DONE_TXT, true)))) {
+					tempDone.println(INFO_PREFIX + new Date());
+					for (Deadline tempDeadline : tempDones) {
+						String tempLine = dateFormat.format(tempDeadline.getWhen()) + tempDeadline.getInfo();
+						tempDone.println(tempLine);
+						LOGGER.info(new Date() + ": Confirmed: '" + tempLine + "'");
+					}
 				}
-				tempDone.close();
 			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);
