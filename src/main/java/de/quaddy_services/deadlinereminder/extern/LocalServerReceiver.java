@@ -42,11 +42,13 @@ public final class LocalServerReceiver implements VerificationCodeReceiver {
 
 	private static final String CALLBACK_PATH = "/Callback";
 
+	private static final Object SYNC_OBJECT = new Object();
+
 	/** Server or {@code null} before {@link #getRedirectUri()}. */
 	private Server server;
 
 	/** Verification code or {@code null} before received. */
-	volatile String code;
+	private String code;
 
 	@Override
 	public String getRedirectUri() throws Exception {
@@ -61,12 +63,16 @@ public final class LocalServerReceiver implements VerificationCodeReceiver {
 	}
 
 	@Override
-	public synchronized String waitForCode() {
-		try {
-			this.wait(60000);
-		} catch (InterruptedException exception) {
-			// should not happen
+	public String waitForCode() {
+		synchronized (SYNC_OBJECT) {
+			try {
+				SYNC_OBJECT.wait(3600000);
+			} catch (InterruptedException exception) {
+				LOGGER.error("should not happen", exception);
+				Thread.currentThread().interrupt();
+			}
 		}
+		LOGGER.info("waitForCode=" + code);
 		return code;
 	}
 
@@ -95,8 +101,7 @@ public final class LocalServerReceiver implements VerificationCodeReceiver {
 	class CallbackHandler extends AbstractHandler {
 
 		@Override
-		public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch)
-				throws IOException {
+		public void handle(String target, HttpServletRequest request, HttpServletResponse response, int dispatch) throws IOException {
 			LOGGER.info("handle:" + target);
 			if (!CALLBACK_PATH.equals(target)) {
 				return;
@@ -108,9 +113,11 @@ public final class LocalServerReceiver implements VerificationCodeReceiver {
 			if (error != null) {
 				LOGGER.error("Authorization failed. Error=" + error);
 			}
-			code = request.getParameter("code");
-			synchronized (LocalServerReceiver.this) {
-				LocalServerReceiver.this.notify();
+			String tempCode = request.getParameter("code");
+			LOGGER.info("Received code=" + tempCode);
+			synchronized (SYNC_OBJECT) {
+				code = tempCode;
+				SYNC_OBJECT.notifyAll();
 			}
 		}
 
