@@ -30,13 +30,13 @@ public class PersistentCredentialStore implements CredentialStore {
 		File tempFile = getStoreFile(aUserId);
 		if (tempFile.exists()) {
 			try {
-				ObjectInputStream tempIn = new ObjectInputStream(new FileInputStream(tempFile));
-				PersistentCredentialInfo tempInfo = (PersistentCredentialInfo) tempIn.readObject();
-				aCredential.setAccessToken(tempInfo.getAccessToken());
-				aCredential.setRefreshToken(tempInfo.getRefreshToken());
-				aCredential.setExpirationTimeMilliseconds(tempInfo.getExpirationTimeMilliseconds());
-				tempIn.close();
-				LOGGER.info("Loaded: " + tempInfo);
+				try (ObjectInputStream tempIn = new ObjectInputStream(new FileInputStream(tempFile))) {
+					PersistentCredentialInfo tempInfo = (PersistentCredentialInfo) tempIn.readObject();
+					aCredential.setAccessToken(tempInfo.getAccessToken());
+					aCredential.setRefreshToken(tempInfo.getRefreshToken());
+					aCredential.setExpirationTimeMilliseconds(tempInfo.getExpirationTimeMilliseconds());
+					LOGGER.info("Loaded: " + tempInfo);
+				}
 				return true;
 			} catch (Exception e) {
 				LOGGER.error("Ignore", e);
@@ -53,12 +53,10 @@ public class PersistentCredentialStore implements CredentialStore {
 		tempInfo.setExpirationTimeMilliseconds(aCredential.getExpirationTimeMilliseconds());
 		tempInfo.setRefreshToken(aCredential.getRefreshToken());
 		LOGGER.info("Store:" + tempInfo);
-		try {
-			ObjectOutputStream tempOut = new ObjectOutputStream(new FileOutputStream(tempFile));
+		try (ObjectOutputStream tempOut = new ObjectOutputStream(new FileOutputStream(tempFile))) {
 			tempOut.writeObject(tempInfo);
-			tempOut.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Error writing " + tempFile.getAbsolutePath(), e);
 		}
 
 	}
@@ -66,8 +64,7 @@ public class PersistentCredentialStore implements CredentialStore {
 	private File getStoreFile(String aUserId) {
 		File tempDir = new File(System.getProperty("user.home", ".") + "/DeadlineReminder");
 		tempDir.mkdirs();
-		return new File(tempDir.getAbsolutePath() + "/" + PersistentCredentialInfo.class.getName() + "-" + aUserId
-				+ ".info");
+		return new File(tempDir.getAbsolutePath() + "/" + PersistentCredentialInfo.class.getName() + "-" + aUserId + ".info");
 	}
 
 }
