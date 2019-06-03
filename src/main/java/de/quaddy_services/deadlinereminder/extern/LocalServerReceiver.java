@@ -64,12 +64,17 @@ public final class LocalServerReceiver implements VerificationCodeReceiver {
 
 	@Override
 	public String waitForCode() {
+		int tempWaitSeconds = 3600;
 		synchronized (SYNC_OBJECT) {
-			try {
-				SYNC_OBJECT.wait(3600000);
-			} catch (InterruptedException exception) {
-				LOGGER.error("should not happen", exception);
-				Thread.currentThread().interrupt();
+			while (code == null && tempWaitSeconds > 0) {
+				try {
+					SYNC_OBJECT.wait(1000);
+				} catch (InterruptedException exception) {
+					LOGGER.error("should not happen", exception);
+					Thread.currentThread().interrupt();
+					break;
+				}
+				tempWaitSeconds--;
 			}
 		}
 		LOGGER.info("waitForCode=" + code);
