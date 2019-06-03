@@ -291,7 +291,7 @@ public class GoogleSync {
 					if (tempD1.equals(tempD2)) {
 						return true;
 					}
-					logInfo("Same summary " + tempOldSummary + " but different date: " + tempDT1 + " " + tempDT2);
+					logInfo("Same summary " + tempOldSummary + " but different date: " + tempD1 + " " + tempD2);
 				}
 			}
 		}
