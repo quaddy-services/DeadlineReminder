@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -32,6 +33,7 @@ import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 
 import de.quaddy_services.deadlinereminder.Deadline;
+import de.quaddy_services.deadlinereminder.DeadlineComparator;
 import de.quaddy_services.deadlinereminder.Storage;
 import de.quaddy_services.deadlinereminder.file.FileStorage;
 import de.quaddy_services.deadlinereminder.gui.DeadlineGui;
@@ -116,6 +118,12 @@ public class GoogleSync {
 
 	}
 
+	/**
+	 * see de.quaddy_services.deadlinereminder.DeadlineReminder.createModel()
+	 * 
+	 * @param args
+	 * @throws Exception
+	 */
 	public static void main(String[] args) throws Exception {
 		Calendar tempCal = Calendar.getInstance();
 		// Date tempFrom = tempCal.getTime();
@@ -123,6 +131,7 @@ public class GoogleSync {
 		Date tempTo = tempCal.getTime();
 		Storage tempStorage = new FileStorage();
 		List<Deadline> tempDeadlines = tempStorage.getOpenDeadlines(tempTo);
+		Collections.sort(tempDeadlines, new DeadlineComparator());
 		new GoogleSync().push(tempDeadlines);
 
 	}
@@ -187,6 +196,8 @@ public class GoogleSync {
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Overdue events are deleted and recreated next day. The original event is
 				// already kept in calendar.
+			} else if (isContainedIn(tempNewEvents, tempEvent)) {
+				// Is still open. Avoid adding past events twice.
 			} else {
 				if (tempDate != null && tempKeepOld.getTime().getTime() < tempDate.getValue() && tempDate.getValue() < tempNow) {
 					// Keep finished event.
@@ -238,11 +249,24 @@ public class GoogleSync {
 		}
 	}
 
+	private boolean isContainedIn(List<Event> aNewEvents, Event aEvent) {
+		for (Event tempNewEvent : aNewEvents) {
+			if (isSame(aEvent, tempNewEvent)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private void logInfo(String aString) {
 		LOGGER.info(aString);
 		if (getLogListener() != null) {
 			getLogListener().info(aString);
 		}
+	}
+
+	private void logDebug(String aString) {
+		LOGGER.debug(aString);
 	}
 
 	/**
@@ -271,7 +295,8 @@ public class GoogleSync {
 
 	private boolean isSame(Event aOldEvent, Event aNewEvent) {
 		String tempOldSummary = aOldEvent.getSummary();
-		if (tempOldSummary.equals(aNewEvent.getSummary())) {
+		String tempNewSummary = aNewEvent.getSummary();
+		if (tempOldSummary.equals(tempNewSummary)) {
 			EventDateTime tempOldStart = aOldEvent.getStart();
 			DateTime tempDT1 = tempOldStart.getDateTime();
 			EventDateTime tempNewStart = aNewEvent.getStart();
@@ -280,7 +305,7 @@ public class GoogleSync {
 				if (tempDT1.equals(tempDT2)) {
 					return true;
 				}
-				logInfo("Same summary " + tempOldSummary + " but different startdate: " + tempDT1 + " " + tempDT2);
+				logDebug("Same summary " + tempOldSummary + " but different startdate: " + tempDT1 + " " + tempDT2);
 			}
 			DateTime tempOldStartDate = tempOldStart.getDate();
 			DateTime tempNewStartDate = tempNewStart.getDate();
@@ -291,7 +316,7 @@ public class GoogleSync {
 					if (tempD1.equals(tempD2)) {
 						return true;
 					}
-					logInfo("Same summary " + tempOldSummary + " but different date: " + tempD1 + " " + tempD2);
+					logDebug("Same summary " + tempOldSummary + " but different date: " + tempD1 + " " + tempD2);
 				}
 			}
 		}
