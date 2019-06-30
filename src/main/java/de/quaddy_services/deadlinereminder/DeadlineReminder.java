@@ -53,7 +53,7 @@ public class DeadlineReminder {
 	private Model model;
 	private Logger LOGGER = LoggerFactory.getLogger(DeadlineReminder.class);
 	private GoogleSync googleSync;
-	private DeadlineGui tempGUI;
+	private DeadlineGui gui;
 
 	protected void mainEventQueue() {
 		try {
@@ -61,13 +61,13 @@ public class DeadlineReminder {
 			model = createModel();
 			LOGGER.info(new Date() + ": Found " + model.getOpenDeadlines().size() + " deadlines");
 			googleSync = new GoogleSync();
-			tempGUI = new DeadlineGui();
+			gui = new DeadlineGui();
 
-			googleSync.setLogListener(new StatusLogListener(tempGUI));
+			googleSync.setLogListener(new StatusLogListener(gui));
 
-			googleSync.pushToGoogle(model.getOpenDeadlines(), tempGUI.createDoneSelectionListener());
+			googleSync.pushToGoogle(model.getOpenDeadlines(), gui.createDoneSelectionListener());
 			lastSyncSize = model.getOpenDeadlines().size();
-			tempGUI.setModel(model);
+			gui.setModel(model);
 			final JFrame tempFrame = new JFrame();
 			tempFrame.setIconImage(loadIcon());
 			tempFrame.setTitle("Deadline Reminder " + new Date());
@@ -77,7 +77,7 @@ public class DeadlineReminder {
 			tempFrame.setSize(w, h);
 			tempFrame.setLocation((d.width - w) / 2, (d.height - h) / 3);
 			tempFrame.setAlwaysOnTop(false);
-			tempFrame.getContentPane().add(tempGUI);
+			tempFrame.getContentPane().add(gui);
 
 			tempFrame.setVisible(true);
 			tempFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -95,7 +95,7 @@ public class DeadlineReminder {
 			tempTimer = new Timer(tempDelay, new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent aE) {
-					every10Minutes(tempFrame);
+					every10Minutes();
 				}
 			});
 			tempTimer.setRepeats(true);
@@ -154,12 +154,17 @@ public class DeadlineReminder {
 		LOGGER.info(new Date() + ":SaveModel");
 		Storage tempFileStorage = new FileStorage();
 		tempFileStorage.saveConfirmedTasks(model.getOpenDeadlines());
+		try {
+			tempFileStorage.addFromGroogle(model.getAddedFromGoogle());
+		} catch (IOException e) {
+			throw new RuntimeException("Error", e);
+		}
 	}
 
 	private int lastSyncHour = 0;
 	private int lastSyncSize = 0;
 
-	private void every10Minutes(JFrame aFrame) {
+	private void every10Minutes() {
 		try {
 			LOGGER.debug(new Date() + ":Check");
 			boolean tempDoneAvailable = false;
@@ -179,18 +184,18 @@ public class DeadlineReminder {
 			int tempHour = tempCal.get(Calendar.HOUR_OF_DAY);
 			if (tempDoneAvailable || tempHour < lastSyncHour || model.getOpenDeadlines().size() != lastSyncSize) {
 				// at least once a day.
-				googleSync.pushToGoogle(model.getOpenDeadlines(), tempGUI.createDoneSelectionListener());
+				googleSync.pushToGoogle(model.getOpenDeadlines(), gui.createDoneSelectionListener());
 			}
 			lastSyncHour = tempHour;
 			lastSyncSize = model.getOpenDeadlines().size();
 
-			tempGUI.setModel(model);
-			tempGUI.invalidate();
-			tempGUI.validate();
-			tempGUI.invalidate();
-			tempGUI.validate();
+			gui.setModel(model);
+			gui.invalidate();
+			gui.validate();
+			gui.invalidate();
+			gui.validate();
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Error", e);
 		}
 	}
 }
