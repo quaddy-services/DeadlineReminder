@@ -8,10 +8,13 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 import org.slf4j.Logger;
@@ -58,7 +61,7 @@ public class GoogleSync {
 
 	private LogListener logListener = null;
 
-	public void pushToGoogle(final List<Deadline> aOpenDeadlines) {
+	public void pushToGoogle(final List<Deadline> aOpenDeadlines, final DoneSelectionListener aDoneSelectionListener) {
 		if (t != null) {
 			logWarn("Already active: " + t);
 			if (threadKill < System.currentTimeMillis()) {
@@ -74,8 +77,11 @@ public class GoogleSync {
 			public void run() {
 				try {
 					logInfo("Start");
-					push(aOpenDeadlines);
-					logInfo("Finished");
+					if (push(aOpenDeadlines, aDoneSelectionListener)) {
+						logInfo("Finished");
+					} else {
+						// Keep last log statement.
+					}
 				} catch (SocketTimeoutException e) {
 					logError("Retry later...", e);
 				} catch (Exception e) {
@@ -86,7 +92,7 @@ public class GoogleSync {
 					// try again
 					try {
 						logInfo("Again:Start");
-						push(aOpenDeadlines);
+						push(aOpenDeadlines, aDoneSelectionListener);
 						logInfo("Again:Finished");
 					} catch (Exception e2) {
 						logError("Again:Error", e2);
@@ -120,7 +126,7 @@ public class GoogleSync {
 
 	/**
 	 * see de.quaddy_services.deadlinereminder.DeadlineReminder.createModel()
-	 * 
+	 *
 	 * @param args
 	 * @throws Exception
 	 */
@@ -132,7 +138,13 @@ public class GoogleSync {
 		Storage tempStorage = new FileStorage();
 		List<Deadline> tempDeadlines = tempStorage.getOpenDeadlines(tempTo);
 		Collections.sort(tempDeadlines, new DeadlineComparator());
-		new GoogleSync().push(tempDeadlines);
+		new GoogleSync().push(tempDeadlines, new DoneSelectionListener() {
+
+			@Override
+			public void deadlineDone(Deadline aDeadline) {
+				LOGGER.info("Done: " + aDeadline);
+			}
+		});
 
 	}
 
@@ -140,11 +152,12 @@ public class GoogleSync {
 	 * https://developers.google.com/google-apps/calendar/
 	 *
 	 * @param aOpenDeadlines
+	 * @param aDoneSelectionListener
 	 * @throws Exception
 	 */
-	protected void push(List<Deadline> aOpenDeadlines) throws Exception {
+	protected boolean push(List<Deadline> aOpenDeadlines, DoneSelectionListener aDoneSelectionListener) throws Exception {
 		/** Global instance of the HTTP transport. */
-		HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+		HttpTransport HTTP_TRANSPORT = createNetHttpTransport();
 
 		/** Global instance of the JSON factory. */
 		JsonFactory JSON_FACTORY = new JacksonFactory();
@@ -154,19 +167,38 @@ public class GoogleSync {
 		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
 				.setApplicationName("Google-DeadlineReminder/1.0").setHttpRequestInitializer(credential).build();
 
-		push(client, aOpenDeadlines);
+		return push(client, aOpenDeadlines, aDoneSelectionListener);
 	}
 
-	private void push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines) throws IOException {
+	/**
+	 *
+	 */
+	private NetHttpTransport createNetHttpTransport() {
+		return new NetHttpTransport.Builder().build();
+	}
+
+	private boolean push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines, DoneSelectionListener aDoneSelectionListener)
+			throws IOException {
 
 		CalendarList tempCalendarList = config(client.calendarList().list()).execute();
 		String tempDeadlineCalendarId = null;
 		if (tempCalendarList.getItems() != null) {
 			for (CalendarListEntry tempEntry : tempCalendarList.getItems()) {
-				if (tempEntry.getSummary().startsWith("Deadline")) {
+				String tempSummary = tempEntry.getSummary();
+				String tempSummaryOverride = tempEntry.getSummaryOverride();
+				if (tempSummaryOverride != null) {
+					tempSummary = tempSummaryOverride;
+				}
+				if (tempSummary.startsWith("Deadline")) {
+					LOGGER.info("Found calendar " + tempSummary);
 					tempDeadlineCalendarId = tempEntry.getId();
 				}
 			}
+		}
+		if (tempDeadlineCalendarId == null) {
+			String tempString = "Did not find Calendar with name Deadline* in Account.";
+			logWarn(tempString);
+			return false;
 		}
 
 		Calendar tempKeepOld = Calendar.getInstance();
@@ -175,13 +207,13 @@ public class GoogleSync {
 		Calendar tempTooFarAway = Calendar.getInstance();
 		tempTooFarAway.add(Calendar.YEAR, 2);
 
-		List<Event> tempNewEvents = new ArrayList<Event>();
+		Map<Event, Deadline> tempNewEvents = new HashMap<>();
 		for (Deadline tempDeadline : aOpenDeadlines) {
 			if (tempDeadline.getWhen().after(tempTooFarAway.getTime())) {
 				continue;
 			}
 			Event event = newEvent(tempDeadline);
-			tempNewEvents.add(event);
+			tempNewEvents.put(event, tempDeadline);
 		}
 		logInfo("Matching local events: " + tempNewEvents.size());
 		ArrayList<Event> tempCurrentEvents;
@@ -196,7 +228,7 @@ public class GoogleSync {
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Overdue events are deleted and recreated next day. The original event is
 				// already kept in calendar.
-			} else if (isContainedIn(tempNewEvents, tempEvent)) {
+			} else if (isContainedIn(tempNewEvents.keySet(), tempEvent)) {
 				// Is still open. Avoid adding past events twice.
 			} else {
 				if (tempDate != null && tempKeepOld.getTime().getTime() < tempDate.getValue() && tempDate.getValue() < tempNow) {
@@ -216,9 +248,16 @@ public class GoogleSync {
 		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
 			Event tempEvent = iCurrent.next();
 			boolean tempRemoved = false;
-			for (Iterator<Event> iNew = tempNewEvents.iterator(); iNew.hasNext();) {
-				Event tempNewEvent = iNew.next();
+			for (Iterator<Map.Entry<Event, Deadline>> iNew = tempNewEvents.entrySet().iterator(); iNew.hasNext();) {
+				Map.Entry<Event, Deadline> tempMapEntry = iNew.next();
+				Event tempNewEvent = tempMapEntry.getKey();
 				if (isSame(tempEvent, tempNewEvent)) {
+					if ("transparent".equals(tempEvent.getTransparency())) {
+						Deadline tempDeadline = tempMapEntry.getValue();
+						logInfo("Google calendar entry was marked available and so make it done. tempDeadline=" + tempDeadline);
+						tempDeadline.setDone(true);
+						aDoneSelectionListener.deadlineDone(tempDeadline);
+					}
 					iCurrent.remove();
 					iNew.remove();
 					tempRemoved = true;
@@ -241,15 +280,16 @@ public class GoogleSync {
 			logInfo("Deleted " + tempStart + " " + tempSummary + " " + tempEvent);
 			slowDown();
 		}
-		for (Event tempEvent : tempNewEvents) {
+		for (Event tempEvent : tempNewEvents.keySet()) {
 			EventDateTime tempStart = tempEvent.getStart();
 			Event tempResult = config(client.events().insert(tempDeadlineCalendarId, tempEvent)).execute();
 			logInfo("Added " + tempStart + " " + tempEvent.getSummary() + " " + tempResult);
 			slowDown();
 		}
+		return true;
 	}
 
-	private boolean isContainedIn(List<Event> aNewEvents, Event aEvent) {
+	private boolean isContainedIn(Collection<Event> aNewEvents, Event aEvent) {
 		for (Event tempNewEvent : aNewEvents) {
 			if (isSame(aEvent, tempNewEvent)) {
 				return true;
@@ -276,7 +316,7 @@ public class GoogleSync {
 	 * Forbidden { "code" : 403, "errors" : [ { "domain" : "usageLimits", "message"
 	 * : "Rate Limit Exceeded", "reason" : "rateLimitExceeded" } ], "message" :
 	 * "Rate Limit Exceeded"
-	 * 
+	 *
 	 */
 	private void slowDown() {
 		try {

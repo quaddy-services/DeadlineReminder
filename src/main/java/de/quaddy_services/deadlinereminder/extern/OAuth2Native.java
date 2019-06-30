@@ -125,10 +125,10 @@ public class OAuth2Native {
 	public static Credential authorize(HttpTransport transport, JsonFactory jsonFactory,
 			VerificationCodeReceiver receiver, Iterable<String> scopes) throws Exception {
 		String redirectUri = receiver.getRedirectUri();
-		GoogleClientSecrets clientSecrets = loadClientSecrets(jsonFactory);
+		GoogleClientSecrets tempClientSecrets = loadClientSecrets(jsonFactory);
 		// redirect to an authorization page
 		GoogleAuthorizationCodeFlow.Builder tempBuilder = new GoogleAuthorizationCodeFlow.Builder(transport,
-				jsonFactory, clientSecrets, scopes);
+				jsonFactory, tempClientSecrets, scopes);
 		tempBuilder.setCredentialStore(new PersistentCredentialStore());
 		GoogleAuthorizationCodeFlow flow = tempBuilder.build();
 		String tempUserName = System.getProperty("user.name", "-");

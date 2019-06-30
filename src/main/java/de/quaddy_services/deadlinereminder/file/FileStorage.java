@@ -77,9 +77,10 @@ public class FileStorage implements Storage {
 		return tempMatchingDeadlines;
 	}
 
-	protected Reader createReader(File tempFile) throws FileNotFoundException {
+	protected Reader createReader(File tempFile) throws IOException {
 		if (!tempFile.exists()) {
 			LOGGER.info("File does not exist: " + tempFile.getAbsolutePath());
+			tempFile.createNewFile();
 			return new StringReader("");
 		}
 		return new FileReader(tempFile);
