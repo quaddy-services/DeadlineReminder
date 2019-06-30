@@ -74,8 +74,11 @@ public class GoogleSync {
 			public void run() {
 				try {
 					logInfo("Start");
-					push(aOpenDeadlines);
-					logInfo("Finished");
+					if (push(aOpenDeadlines)) {
+						logInfo("Finished");
+					} else {
+						// Keep last log statement.
+					}
 				} catch (SocketTimeoutException e) {
 					logError("Retry later...", e);
 				} catch (Exception e) {
@@ -142,7 +145,7 @@ public class GoogleSync {
 	 * @param aOpenDeadlines
 	 * @throws Exception
 	 */
-	protected void push(List<Deadline> aOpenDeadlines) throws Exception {
+	protected boolean push(List<Deadline> aOpenDeadlines) throws Exception {
 		/** Global instance of the HTTP transport. */
 		HttpTransport HTTP_TRANSPORT = createNetHttpTransport();
 
@@ -154,7 +157,7 @@ public class GoogleSync {
 		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
 				.setApplicationName("Google-DeadlineReminder/1.0").setHttpRequestInitializer(credential).build();
 
-		push(client, aOpenDeadlines);
+		return push(client, aOpenDeadlines);
 	}
 
 	/**
@@ -164,16 +167,27 @@ public class GoogleSync {
 		return new NetHttpTransport.Builder().build();
 	}
 
-	private void push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines) throws IOException {
+	private boolean push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines) throws IOException {
 
 		CalendarList tempCalendarList = config(client.calendarList().list()).execute();
 		String tempDeadlineCalendarId = null;
 		if (tempCalendarList.getItems() != null) {
 			for (CalendarListEntry tempEntry : tempCalendarList.getItems()) {
-				if (tempEntry.getSummary().startsWith("Deadline")) {
+				String tempSummary = tempEntry.getSummary();
+				String tempSummaryOverride = tempEntry.getSummaryOverride();
+				if (tempSummaryOverride != null) {
+					tempSummary = tempSummaryOverride;
+				}
+				if (tempSummary.startsWith("Deadline")) {
+					LOGGER.info("Found calendar " + tempSummary);
 					tempDeadlineCalendarId = tempEntry.getId();
 				}
 			}
+		}
+		if (tempDeadlineCalendarId == null) {
+			String tempString = "Did not find Calendar with name Deadline* in Account.";
+			logWarn(tempString);
+			return false;
 		}
 
 		Calendar tempKeepOld = Calendar.getInstance();
@@ -254,6 +268,7 @@ public class GoogleSync {
 			logInfo("Added " + tempStart + " " + tempEvent.getSummary() + " " + tempResult);
 			slowDown();
 		}
+		return true;
 	}
 
 	private boolean isContainedIn(List<Event> aNewEvents, Event aEvent) {
