@@ -2,6 +2,7 @@ package de.quaddy_services.deadlinereminder.gui;
 
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -17,7 +18,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.AbstractAction;
 import javax.swing.JCheckBox;
@@ -31,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import de.quaddy_services.deadlinereminder.Deadline;
 import de.quaddy_services.deadlinereminder.Model;
+import de.quaddy_services.deadlinereminder.extern.DoneSelectionListener;
 
 public class DeadlineGui extends JPanel {
 	public static DateFormat dateFormatWithDay = new SimpleDateFormat("EE dd.MM.yyyy");
@@ -40,8 +44,11 @@ public class DeadlineGui extends JPanel {
 	private JPanel statusPanel = new JPanel();
 	private JLabel statusLine = new JLabel();
 
+	private Map<Deadline, JCheckBox> deadlineToCheckBoxMap = new HashMap<>();
+
 	public void setModel(Model aModel) {
 		removeAll();
+		deadlineToCheckBoxMap.clear();
 		setLayout(new GridBagLayout());
 		GridBagConstraints tempGBC1 = new GridBagConstraints();
 		tempGBC1.gridx = 0;
@@ -82,14 +89,14 @@ public class DeadlineGui extends JPanel {
 			tempContentPanel.add(new JLabel("No open deadlines in " + aModel.getSourceInfo()), tempGBC);
 		} else {
 			for (final Deadline tempDeadline : tempOpenDeadlines) {
-				String tempText = dateFormatWithDay.format(tempDeadline.getWhen()) + ": "
-						+ tempDeadline.getTextWithoutRepeatingInfo();
+				String tempText = dateFormatWithDay.format(tempDeadline.getWhen()) + ": " + tempDeadline.getTextWithoutRepeatingInfo();
 				if (tempDeadline.getEndPoint() != null) {
 					tempText += " (-" + dateFormat.format(tempDeadline.getEndPoint()) + ")";
 				} else if (tempDeadline.getRepeating() != null) {
 					tempText += " (" + dateFormat.format(tempDeadline.getRepeating()) + ")";
 				}
 				JCheckBox tempCheckBox = new JCheckBox(tempText);
+				deadlineToCheckBoxMap.put(tempDeadline, tempCheckBox);
 				tempCheckBox.setFont(new Font("Monospaced", 0, 14));
 				if (tempDeadline.getWhen().before(tempToday)) {
 					tempCheckBox.setForeground(Color.RED);
@@ -138,8 +145,7 @@ public class DeadlineGui extends JPanel {
 			tempJPopupMenu.add(new AbstractAction("Copy") {
 				@Override
 				public void actionPerformed(ActionEvent aE) {
-					Toolkit.getDefaultToolkit().getSystemClipboard()
-							.setContents(new StringSelection(tempCheckBox.getText()), null);
+					Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(tempCheckBox.getText()), null);
 				}
 			});
 			tempJPopupMenu.show(tempCheckBox, aE.getX(), aE.getY());
@@ -148,5 +154,31 @@ public class DeadlineGui extends JPanel {
 
 	public void setStatus(String aText) {
 		statusLine.setText(aText);
+	}
+
+	/**
+	 *
+	 */
+	public DoneSelectionListener createDoneSelectionListener() {
+		return new DoneSelectionListener() {
+
+			@Override
+			public void deadlineDone(final Deadline aDeadline) {
+				EventQueue.invokeLater(new Runnable() {
+					/**
+					 *
+					 */
+					@Override
+					public void run() {
+						JCheckBox tempCheckBox = deadlineToCheckBoxMap.get(aDeadline);
+						if (tempCheckBox == null) {
+							LOGGER.warn("No checkbox for " + aDeadline);
+						} else {
+							tempCheckBox.setSelected(aDeadline.isDone());
+						}
+					}
+				});
+			}
+		};
 	}
 }
