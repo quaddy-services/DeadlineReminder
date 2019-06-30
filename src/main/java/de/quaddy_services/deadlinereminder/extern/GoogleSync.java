@@ -120,7 +120,7 @@ public class GoogleSync {
 
 	/**
 	 * see de.quaddy_services.deadlinereminder.DeadlineReminder.createModel()
-	 * 
+	 *
 	 * @param args
 	 * @throws Exception
 	 */
@@ -144,7 +144,7 @@ public class GoogleSync {
 	 */
 	protected void push(List<Deadline> aOpenDeadlines) throws Exception {
 		/** Global instance of the HTTP transport. */
-		HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+		HttpTransport HTTP_TRANSPORT = createNetHttpTransport();
 
 		/** Global instance of the JSON factory. */
 		JsonFactory JSON_FACTORY = new JacksonFactory();
@@ -155,6 +155,13 @@ public class GoogleSync {
 				.setApplicationName("Google-DeadlineReminder/1.0").setHttpRequestInitializer(credential).build();
 
 		push(client, aOpenDeadlines);
+	}
+
+	/**
+	 *
+	 */
+	private NetHttpTransport createNetHttpTransport() {
+		return new NetHttpTransport.Builder().build();
 	}
 
 	private void push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines) throws IOException {
@@ -276,7 +283,7 @@ public class GoogleSync {
 	 * Forbidden { "code" : 403, "errors" : [ { "domain" : "usageLimits", "message"
 	 * : "Rate Limit Exceeded", "reason" : "rateLimitExceeded" } ], "message" :
 	 * "Rate Limit Exceeded"
-	 * 
+	 *
 	 */
 	private void slowDown() {
 		try {
