@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import de.quaddy_services.deadlinereminder.Deadline;
 import de.quaddy_services.deadlinereminder.Model;
+import de.quaddy_services.deadlinereminder.ModelLoaderMustBeReleadedListener;
 import de.quaddy_services.deadlinereminder.extern.DoneSelectionListener;
 
 public class DeadlineGui extends JPanel {
@@ -45,8 +46,11 @@ public class DeadlineGui extends JPanel {
 	private JLabel statusLine = new JLabel();
 
 	private Map<Deadline, JCheckBox> deadlineToCheckBoxMap = new HashMap<>();
+	private ModelLoaderMustBeReleadedListener modelLoaderMustBeReleadedListener;
+	private Model model;
 
 	public void setModel(Model aModel) {
+		model = aModel;
 		removeAll();
 		deadlineToCheckBoxMap.clear();
 		setLayout(new GridBagLayout());
@@ -165,9 +169,6 @@ public class DeadlineGui extends JPanel {
 			@Override
 			public void deadlineDone(final Deadline aDeadline) {
 				EventQueue.invokeLater(new Runnable() {
-					/**
-					 *
-					 */
 					@Override
 					public void run() {
 						JCheckBox tempCheckBox = deadlineToCheckBoxMap.get(aDeadline);
@@ -179,6 +180,25 @@ public class DeadlineGui extends JPanel {
 					}
 				});
 			}
+
+			@Override
+			public void addNewDeadline(final Deadline aDeadline) {
+				EventQueue.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						model.getAddedFromGoogle().add(aDeadline);
+						LOGGER.info("Reload model due to " + aDeadline);
+						modelLoaderMustBeReleadedListener.reloadModelNextTime();
+					}
+				});
+			}
 		};
+	}
+
+	/**
+	 *
+	 */
+	public void setModelLoaderMustBeReleadedListener(ModelLoaderMustBeReleadedListener aModelLoaderMustBeReleadedListener) {
+		modelLoaderMustBeReleadedListener = aModelLoaderMustBeReleadedListener;
 	}
 }

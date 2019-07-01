@@ -55,6 +55,7 @@ public class GoogleSync {
 	private static final boolean DEBUG = false;
 
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yy");
+	private static DateTime lastSyncStarted;
 
 	private Thread t = null;
 	private long threadKill;
@@ -142,7 +143,12 @@ public class GoogleSync {
 
 			@Override
 			public void deadlineDone(Deadline aDeadline) {
-				LOGGER.info("Done: " + aDeadline);
+				LOGGER.info("deadlineDone: " + aDeadline);
+			}
+
+			@Override
+			public void addNewDeadline(Deadline aDeadline) {
+				LOGGER.info("addNewDeadline: " + aDeadline);
 			}
 		});
 
@@ -180,6 +186,8 @@ public class GoogleSync {
 	private boolean push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines, DoneSelectionListener aDoneSelectionListener)
 			throws IOException {
 
+		long tempStartMillis = System.currentTimeMillis();
+
 		CalendarList tempCalendarList = config(client.calendarList().list()).execute();
 		String tempDeadlineCalendarId = null;
 		if (tempCalendarList.getItems() != null) {
@@ -212,7 +220,7 @@ public class GoogleSync {
 			if (tempDeadline.getWhen().after(tempTooFarAway.getTime())) {
 				continue;
 			}
-			Event event = newEvent(tempDeadline);
+			Event event = createGoogleEventFromDeadline(tempDeadline);
 			tempNewEvents.put(event, tempDeadline);
 		}
 		logInfo("Matching local events: " + tempNewEvents.size());
@@ -269,6 +277,17 @@ public class GoogleSync {
 			}
 			EventDateTime tempStart = tempEvent.getStart();
 			String tempSummary = tempEvent.getSummary();
+			DateTime tempLastSyncStarted = getLastSyncStarted();
+			if (tempLastSyncStarted == null || tempLastSyncStarted.getValue() < tempEvent.getCreated().getValue()) {
+				logInfo("Looks like it is a manual created event in Google=" + tempStart + " " + tempSummary);
+				Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
+				// tempNewEvents needs not to be updated as event is already at google.
+				// and next time it will be detected as normally added one.
+				aDoneSelectionListener.addNewDeadline(tempDeadline);
+				iCurrent.remove();
+				continue;
+			}
+
 			logInfo("No matching current event found for Google=" + tempStart + " " + tempSummary);
 		}
 		for (Event tempEvent : tempCurrentEvents) {
@@ -286,7 +305,22 @@ public class GoogleSync {
 			logInfo("Added " + tempStart + " " + tempEvent.getSummary() + " " + tempResult);
 			slowDown();
 		}
+		setLastSyncStarted(new DateTime(tempStartMillis));
 		return true;
+	}
+
+	/**
+	 *
+	 */
+	private static synchronized void setLastSyncStarted(DateTime aDateTime) {
+		lastSyncStarted = aDateTime;
+	}
+
+	/**
+	 *
+	 */
+	private static synchronized DateTime getLastSyncStarted() {
+		return lastSyncStarted;
 	}
 
 	private boolean isContainedIn(Collection<Event> aNewEvents, Event aEvent) {
@@ -394,7 +428,10 @@ public class GoogleSync {
 		return (R) aRequest.setDisableGZipContent(true);
 	}
 
-	private Event newEvent(Deadline aDeadline) {
+	/**
+	 * opposite of {@link #createDeadlineFromGoogleEvent(Event)}
+	 */
+	private Event createGoogleEventFromDeadline(Deadline aDeadline) {
 		Calendar tempCal = Calendar.getInstance();
 		tempCal.set(Calendar.HOUR_OF_DAY, 0);
 		tempCal.set(Calendar.MINUTE, 0);
@@ -432,6 +469,32 @@ public class GoogleSync {
 			event.setEnd(new EventDateTime().setDateTime(end));
 		}
 		return event;
+	}
+
+	/**
+	 * Opposite of {@link #createDeadlineFromGoogleEvent(Event)}
+	 */
+	private Deadline createDeadlineFromGoogleEvent(Event anEvent) {
+		String tempSummary = anEvent.getSummary();
+		Deadline tempDeadline = new Deadline();
+		tempDeadline.setTextWithoutRepeatingInfo(tempSummary);
+
+		EventDateTime tempStart = anEvent.getStart();
+		Date tempWhen;
+		if (tempStart.getDateTime() != null) {
+			tempWhen = new Date(tempStart.getDateTime().getValue());
+		} else {
+			// Whole day
+			Calendar tempCal = Calendar.getInstance();
+			tempCal.setTimeInMillis(tempStart.getDate().getValue());
+			tempCal.set(Calendar.HOUR, 0);
+			tempCal.set(Calendar.MINUTE, 0);
+			tempCal.set(Calendar.SECOND, 0);
+			tempCal.set(Calendar.MILLISECOND, 0);
+			tempWhen = tempCal.getTime();
+		}
+		tempDeadline.setWhen(tempWhen);
+		return tempDeadline;
 	}
 
 	/**

@@ -29,11 +29,18 @@ public class FileStorage implements Storage {
 	private static final Logger LOGGER = LoggerFactory.getLogger(FileStorage.class);
 
 	public static final String TERMIN_TXT = "termin.txt";
+	public static final String TERMIN_GOOGLE_ADDED_TXT = "termin-added-by-google.txt";
 	private static final String INFO_PREFIX = "--";
 	private static final String INFO_PREFIX2 = "#";
 	public static final String TERMIN_DONE_TXT = "termin-done.txt";
 	private static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
 	private static DateFormat timeFormat = new SimpleDateFormat("HH:mm");
+
+	private static final Object MONITOR = new Object();
+
+	public FileStorage() {
+		super();
+	}
 
 	private File getDirectory() {
 		File tempUserHome = new File(System.getProperty("user.home"));
@@ -49,14 +56,21 @@ public class FileStorage implements Storage {
 
 	@Override
 	public List<Deadline> getOpenDeadlines(Date to) {
-		try {
-			List<Deadline> tempDeadlines = readDeadlines(to, TERMIN_TXT);
-			List<Deadline> tempDoneDeadlines = readDeadlines(null, TERMIN_DONE_TXT);
-			List<Deadline> tempFound = new ArrayList<Deadline>(tempDeadlines);
-			tempFound.removeAll(tempDoneDeadlines);
-			return tempFound;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+		synchronized (MONITOR) {
+			try {
+				List<Deadline> tempDeadlinesFromTerminTxt = readDeadlines(to, TERMIN_TXT);
+				List<Deadline> tempDeadlinesFromGoogle = readDeadlines(to, TERMIN_GOOGLE_ADDED_TXT);
+
+				List<Deadline> tempDoneDeadlines = readDeadlines(null, TERMIN_DONE_TXT);
+				List<Deadline> tempFound = new ArrayList<Deadline>();
+				tempFound.addAll(tempDeadlinesFromGoogle);
+				tempFound.addAll(tempDeadlinesFromTerminTxt);
+
+				tempFound.removeAll(tempDoneDeadlines);
+				return tempFound;
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -410,6 +424,37 @@ public class FileStorage implements Storage {
 			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public void addFromGroogle(List<Deadline> aDeadline) throws IOException {
+		synchronized (MONITOR) {
+			File tempFile = new File(getDirectory().getAbsolutePath() + "/" + TERMIN_GOOGLE_ADDED_TXT);
+			if (!tempFile.exists()) {
+				tempFile.createNewFile();
+			}
+			try (FileWriter tempFileWriter = new FileWriter(tempFile, true)) {
+				for (Deadline tempDeadline : aDeadline) {
+					StringBuilder tempDeadlineText = new StringBuilder();
+					Date tempWhen = tempDeadline.getWhen();
+					Calendar tempCalendar = Calendar.getInstance();
+					tempCalendar.setTime(tempWhen);
+
+					tempDeadlineText.append(dateFormat.format(tempWhen));
+					if (tempCalendar.get(Calendar.HOUR) == 0 && tempCalendar.get(Calendar.MINUTE) == 0) {
+						// Wholeday event
+					} else {
+						tempDeadlineText.append(" ");
+						tempDeadlineText.append(timeFormat.format(tempWhen));
+					}
+					tempDeadlineText.append(" ");
+					tempDeadlineText.append(tempDeadline.getTextWithoutRepeatingInfo());
+
+					tempFileWriter.append(tempDeadlineText.toString());
+					tempFileWriter.append(System.lineSeparator());
+				}
+			}
 		}
 	}
 }

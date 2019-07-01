@@ -12,6 +12,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -68,6 +69,14 @@ public class DeadlineReminder {
 			googleSync.pushToGoogle(model.getOpenDeadlines(), gui.createDoneSelectionListener());
 			lastSyncSize = model.getOpenDeadlines().size();
 			gui.setModel(model);
+			gui.setModelLoaderMustBeReleadedListener(new ModelLoaderMustBeReleadedListener() {
+
+				@Override
+				public void reloadModelNextTime() {
+					reloadModel();
+				}
+
+			});
 			final JFrame tempFrame = new JFrame();
 			tempFrame.setIconImage(loadIcon());
 			tempFrame.setTitle("Deadline Reminder " + new Date());
@@ -155,7 +164,9 @@ public class DeadlineReminder {
 		Storage tempFileStorage = new FileStorage();
 		tempFileStorage.saveConfirmedTasks(model.getOpenDeadlines());
 		try {
-			tempFileStorage.addFromGroogle(model.getAddedFromGoogle());
+			List<Deadline> tempAddedFromGoogle = new ArrayList<>(model.getAddedFromGoogle());
+			model.getAddedFromGoogle().clear();
+			tempFileStorage.addFromGroogle(tempAddedFromGoogle);
 		} catch (IOException e) {
 			throw new RuntimeException("Error", e);
 		}
@@ -165,6 +176,23 @@ public class DeadlineReminder {
 	private int lastSyncSize = 0;
 
 	private void every10Minutes() {
+		reloadModel();
+
+		Calendar tempCal = Calendar.getInstance();
+		int tempHour = tempCal.get(Calendar.HOUR_OF_DAY);
+		if (tempHour < lastSyncHour || model.getOpenDeadlines().size() != lastSyncSize) {
+			// at least once a day.
+			googleSync.pushToGoogle(model.getOpenDeadlines(), gui.createDoneSelectionListener());
+		}
+		lastSyncHour = tempHour;
+		lastSyncSize = model.getOpenDeadlines().size();
+
+	}
+
+	/**
+	 *
+	 */
+	private void reloadModel() {
 		try {
 			LOGGER.debug(new Date() + ":Check");
 			boolean tempDoneAvailable = false;
@@ -175,19 +203,10 @@ public class DeadlineReminder {
 					break;
 				}
 			}
-			if (tempDoneAvailable) {
+			if (tempDoneAvailable || !model.getAddedFromGoogle().isEmpty()) {
 				saveModel();
 			}
 			model = createModel();
-
-			Calendar tempCal = Calendar.getInstance();
-			int tempHour = tempCal.get(Calendar.HOUR_OF_DAY);
-			if (tempDoneAvailable || tempHour < lastSyncHour || model.getOpenDeadlines().size() != lastSyncSize) {
-				// at least once a day.
-				googleSync.pushToGoogle(model.getOpenDeadlines(), gui.createDoneSelectionListener());
-			}
-			lastSyncHour = tempHour;
-			lastSyncSize = model.getOpenDeadlines().size();
 
 			gui.setModel(model);
 			gui.invalidate();
