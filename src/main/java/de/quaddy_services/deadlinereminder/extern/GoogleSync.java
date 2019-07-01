@@ -468,6 +468,7 @@ public class GoogleSync {
 			DateTime end = new DateTime(endDate, TimeZone.getDefault());
 			event.setEnd(new EventDateTime().setDateTime(end));
 		}
+		event.setDescription("Added by DeadlineReminder-GoogleSync");
 		return event;
 	}
 
