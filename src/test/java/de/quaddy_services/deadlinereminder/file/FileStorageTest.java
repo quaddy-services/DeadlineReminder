@@ -32,6 +32,9 @@ public class FileStorageTest extends TestCase {
 			if (aTempFile.getName().equals(TERMIN_DONE_TXT)) {
 				return new StringReader("");
 			}
+			if (aTempFile.getName().equals(TERMIN_GOOGLE_ADDED_TXT)) {
+				return new StringReader("");
+			}
 			return new StringReader(termin);
 		}
 	}
