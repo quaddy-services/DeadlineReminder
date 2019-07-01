@@ -67,7 +67,7 @@ public class DeadlineReminder {
 			googleSync.setLogListener(new StatusLogListener(gui));
 
 			googleSync.pushToGoogle(model.getOpenDeadlines(), gui.createDoneSelectionListener());
-			lastSyncSize = model.getOpenDeadlines().size();
+
 			gui.setModel(model);
 			gui.setModelLoaderMustBeReleadedListener(new ModelLoaderMustBeReleadedListener() {
 
@@ -172,20 +172,10 @@ public class DeadlineReminder {
 		}
 	}
 
-	private int lastSyncHour = 0;
-	private int lastSyncSize = 0;
-
 	private void every10Minutes() {
 		reloadModel();
 
-		Calendar tempCal = Calendar.getInstance();
-		int tempHour = tempCal.get(Calendar.HOUR_OF_DAY);
-		if (tempHour < lastSyncHour || model.getOpenDeadlines().size() != lastSyncSize) {
-			// at least once a day.
-			googleSync.pushToGoogle(model.getOpenDeadlines(), gui.createDoneSelectionListener());
-		}
-		lastSyncHour = tempHour;
-		lastSyncSize = model.getOpenDeadlines().size();
+		googleSync.pushToGoogle(model.getOpenDeadlines(), gui.createDoneSelectionListener());
 
 	}
 
