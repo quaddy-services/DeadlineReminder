@@ -141,10 +141,10 @@ public class DeadlineGui extends JPanel {
 	}
 
 	protected void showPopUp(MouseEvent aE) {
-		LOGGER.info("showPopUp " + aE);
 		final JCheckBox tempCheckBox = (JCheckBox) aE.getSource();
 		tempCheckBox.requestFocus();
 		if (aE.getButton() == MouseEvent.BUTTON3) {
+			LOGGER.info("showPopUp " + aE);
 			JPopupMenu tempJPopupMenu = new JPopupMenu();
 			tempJPopupMenu.add(new AbstractAction("Copy") {
 				@Override
