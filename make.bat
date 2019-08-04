@@ -1,9 +1,11 @@
 echo on
 set java_home=c:\programs\currentJDK
-%java_home%\bin\java -version
+%java_home%\bin\java -version 2>src\main\resources\make-info.txt
+type src\main\resources\make-info.txt
 if %errorlevel% == 1 goto noJDK
 
-echo %date% >src/main/resources/version.txt
+echo %date% >src\main\resources\version.txt
+
 del target\DeadlineReminder-SNAPSHOT.zip
 del target\DeadlineReminder-SNAPSHOT.jar
 call mvn -U clean install source:jar

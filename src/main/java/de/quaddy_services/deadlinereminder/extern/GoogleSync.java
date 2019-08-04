@@ -278,7 +278,11 @@ public class GoogleSync {
 			EventDateTime tempStart = tempEvent.getStart();
 			String tempSummary = tempEvent.getSummary();
 			DateTime tempLastSyncStarted = getLastSyncStarted();
-			if (tempLastSyncStarted == null || tempLastSyncStarted.getValue() < tempEvent.getCreated().getValue()) {
+			if (tempSummary.startsWith(OVERDUE_MARKER)) {
+				// Do not add self generated files 
+				// e.g. when restarting deadline-reminder (tempLastSyncStarted == null)
+				// or when suspended more than one day
+			} else if (tempLastSyncStarted == null || tempLastSyncStarted.getValue() < tempEvent.getCreated().getValue()) {
 				logInfo("Looks like it is a manual created event in Google=" + tempStart + " " + tempSummary);
 				Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
 				// tempNewEvents needs not to be updated as event is already at google.
