@@ -224,8 +224,11 @@ public class GoogleSync {
 		ArrayList<Event> tempCurrentEvents;
 		tempCurrentEvents = getCurrentItems(client, tempDeadlineCalendarId);
 		logInfo("Already at Google (including history): " + tempCurrentEvents.size());
+		long tempNow = System.currentTimeMillis();
 		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
 			Event tempEvent = iCurrent.next();
+			EventDateTime tempStart = tempEvent.getStart();
+			DateTime tempDate = tempStart.getDate();
 			String tempSummary = tempEvent.getSummary();
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Overdue events are deleted and recreated next day. The original event is
@@ -233,9 +236,17 @@ public class GoogleSync {
 			} else if (isContainedIn(tempNewEvents.keySet(), tempEvent)) {
 				// Is still open. Avoid adding past events twice.
 			} else {
-				// Keep finished event.
-				iCurrent.remove();
-				continue;
+				if (tempDate != null && tempDate.getValue() < tempNow) {
+					// Keep finished event.
+					iCurrent.remove();
+					continue;
+				}
+				DateTime tempDateTime = tempStart.getDateTime();
+				if (tempDateTime != null && tempDateTime.getValue() < tempNow) {
+					// Keep finished event.
+					iCurrent.remove();
+					continue;
+				}
 			}
 		}
 		logInfo("Already at Google to be synced: " + tempCurrentEvents.size());
