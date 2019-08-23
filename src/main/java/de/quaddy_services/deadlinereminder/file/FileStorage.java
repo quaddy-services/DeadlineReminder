@@ -7,11 +7,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -101,8 +99,9 @@ public class FileStorage implements Storage {
 		}
 		String tempEncoding = "UTF-8";
 		// https://dzone.com/articles/java-may-use-utf-8-as-its-default-charset
-		LOGGER.info("Read " + tempFile + " with encoding=" + tempEncoding);
-		return new BufferedReader(new InputStreamReader(new FileInputStream(tempFile), tempEncoding));
+		UnicodeReader tempIn = new UnicodeReader(new FileInputStream(tempFile), tempEncoding);
+		LOGGER.info("Read " + tempFile + " with encoding=" + tempIn.getEncoding());
+		return new BufferedReader(tempIn);
 	}
 
 	private List<Deadline> parseDeadline(String tempLine, boolean aRepeating) {
@@ -436,9 +435,6 @@ public class FileStorage implements Storage {
 	public void addFromGroogle(List<Deadline> aDeadline) throws IOException {
 		synchronized (MONITOR) {
 			File tempFile = new File(getDirectory().getAbsolutePath() + "/" + TERMIN_GOOGLE_ADDED_TXT);
-			if (!tempFile.exists()) {
-				tempFile.createNewFile();
-			}
 			try (BufferedWriter tempFileWriter = createFileWriter(tempFile)) {
 				for (Deadline tempDeadline : aDeadline) {
 					StringBuilder tempDeadlineText = new StringBuilder();
@@ -463,10 +459,19 @@ public class FileStorage implements Storage {
 		}
 	}
 
-	private BufferedWriter createFileWriter(File aFile) throws UnsupportedEncodingException, FileNotFoundException {
+	private BufferedWriter createFileWriter(File aFile) throws IOException {
+		boolean tempWriteBOM = false;
+		if (!aFile.exists()) {
+			tempWriteBOM = true;
+		}
 		LOGGER.info("Write to " + aFile + " with encoding=UTF-8");
 		// https://dzone.com/articles/java-may-use-utf-8-as-its-default-charset
-		OutputStreamWriter tempOutputStreamWriter = new OutputStreamWriter(new FileOutputStream(aFile), "UTF-8");
+		FileOutputStream tempOut = new FileOutputStream(aFile);
+		if (tempWriteBOM) {
+			// ((bom[0] == (byte) 0xEF) && (bom[1] == (byte) 0xBB) && (bom[2] == (byte) 0xBF)) {
+			tempOut.write(new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF });
+		}
+		OutputStreamWriter tempOutputStreamWriter = new OutputStreamWriter(tempOut, "UTF-8");
 		return new BufferedWriter(tempOutputStreamWriter);
 	}
 }
