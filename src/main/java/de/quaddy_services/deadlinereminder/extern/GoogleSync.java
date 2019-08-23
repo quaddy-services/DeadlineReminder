@@ -310,7 +310,7 @@ public class GoogleSync {
 				// Do not add self generated files 
 				// e.g. when restarting deadline-reminder (tempLastSyncStarted == null)
 				// or when suspended more than one day
-			} else if (tempLastSyncStarted == null || tempLastSyncStarted.getValue() < tempEvent.getCreated().getValue()) {
+			} else if (isManuallyCreatedEntry(tempLastSyncStarted, tempEvent)) {
 				logInfo("Looks like it is a manual created event in Google=" + tempStart + " " + tempSummary);
 				Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
 				// tempNewEvents needs not to be updated as event is already at google.
@@ -340,6 +340,26 @@ public class GoogleSync {
 		}
 		setLastSyncStarted(new DateTime(tempStartMillis));
 		return true;
+	}
+
+	private boolean isManuallyCreatedEntry(DateTime aLastSyncStarted, Event aEvent) {
+		ExtendedProperties tempExtendedProperties = aEvent.getExtendedProperties();
+		if (tempExtendedProperties != null) {
+			String tempTextWithoutRepeatingInfo = (String) tempExtendedProperties.get("TextWithoutRepeatingInfo");
+			if (tempTextWithoutRepeatingInfo != null) {
+				// created by DeadlineReminder.
+				return false;
+			}
+		}
+		// try to guess:
+		if (aLastSyncStarted == null) {
+			// assume all "unknown" events are manual
+			return true;
+		}
+		if (aLastSyncStarted.getValue() < aEvent.getCreated().getValue()) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
