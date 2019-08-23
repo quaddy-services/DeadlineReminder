@@ -12,9 +12,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 
 import org.slf4j.Logger;
@@ -32,6 +34,7 @@ import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.CalendarList;
 import com.google.api.services.calendar.model.CalendarListEntry;
 import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.Event.ExtendedProperties;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 
@@ -50,6 +53,7 @@ import de.quaddy_services.deadlinereminder.gui.DeadlineGui;
  *
  */
 public class GoogleSync {
+	private static final String REPEATING_MARKER = " (";
 	private static final String OVERDUE_MARKER = "! ";
 	private static final Logger LOGGER = LoggerFactory.getLogger(GoogleSync.class);
 	private static final boolean DEBUG = false;
@@ -58,21 +62,34 @@ public class GoogleSync {
 	private static DateTime lastSyncStarted;
 
 	private Thread t = null;
-	private long threadKill;
-
 	private LogListener logListener = null;
+
+	private List<String> localeRepeatingMarkers;
+
+	public GoogleSync() {
+		DateFormat tempFormat = new SimpleDateFormat("EE");
+		Calendar tempCal = Calendar.getInstance();
+		Set<String> tempLocaleMarkers = new HashSet<>();
+		for (int d = 0; d < 7; d++) {
+			tempCal.add(Calendar.DAY_OF_YEAR, 1);
+			String tempFormattedDay = tempFormat.format(tempCal.getTime());
+			tempLocaleMarkers.add(REPEATING_MARKER + tempFormattedDay + " ");
+			tempLocaleMarkers.add(REPEATING_MARKER + tempFormattedDay + ". ");
+			if (tempFormattedDay.length() > 2) {
+				// maybe tempFormattedDay already contains a dot
+				tempLocaleMarkers.add(REPEATING_MARKER + tempFormattedDay.substring(0, 2) + " ");
+				tempLocaleMarkers.add(REPEATING_MARKER + tempFormattedDay.substring(0, 2) + ". ");
+			}
+		}
+		localeRepeatingMarkers = new ArrayList<>(tempLocaleMarkers);
+		LOGGER.info("localeRepeatingMarkers=" + localeRepeatingMarkers);
+	}
 
 	public void pushToGoogle(final List<Deadline> aOpenDeadlines, final DoneSelectionListener aDoneSelectionListener) {
 		if (t != null) {
 			logWarn("Already active: " + t);
-			if (threadKill < System.currentTimeMillis()) {
-				logWarn("Interrupt: " + t);
-				t.interrupt();
-			} else {
-				return;
-			}
+			return;
 		}
-		threadKill = System.currentTimeMillis() + 300 * 1000;
 		t = new Thread() {
 			@Override
 			public void run() {
@@ -139,7 +156,7 @@ public class GoogleSync {
 		Storage tempStorage = new FileStorage();
 		List<Deadline> tempDeadlines = tempStorage.getOpenDeadlines(tempTo);
 		Collections.sort(tempDeadlines, new DeadlineComparator());
-		new GoogleSync().push(tempDeadlines, new DoneSelectionListener() {
+		DoneSelectionListener tempDoneSelectionListener = new DoneSelectionListener() {
 
 			@Override
 			public void deadlineDone(Deadline aDeadline) {
@@ -150,7 +167,8 @@ public class GoogleSync {
 			public void addNewDeadline(Deadline aDeadline) {
 				LOGGER.info("addNewDeadline: " + aDeadline);
 			}
-		});
+		};
+		new GoogleSync().push(tempDeadlines, tempDoneSelectionListener);
 
 	}
 
@@ -247,9 +265,11 @@ public class GoogleSync {
 					iCurrent.remove();
 					continue;
 				}
+				LOGGER.info("Found a new Event: " + tempEvent);
 			}
 		}
 		logInfo("Already at Google to be synced: " + tempCurrentEvents.size());
+		List<Event> tempAlreadyKeptEvents = new ArrayList<>();
 		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
 			Event tempEvent = iCurrent.next();
 			boolean tempRemoved = false;
@@ -369,8 +389,8 @@ public class GoogleSync {
 	}
 
 	private boolean isSame(Event aOldEvent, Event aNewEvent) {
-		String tempOldSummary = aOldEvent.getSummary();
-		String tempNewSummary = aNewEvent.getSummary();
+		String tempOldSummary = removeRepeatingMarker(aOldEvent).trim();
+		String tempNewSummary = removeRepeatingMarker(aNewEvent).trim();
 		if (tempOldSummary.equals(tempNewSummary)) {
 			EventDateTime tempOldStart = aOldEvent.getStart();
 			DateTime tempDT1 = tempOldStart.getDateTime();
@@ -396,6 +416,26 @@ public class GoogleSync {
 			}
 		}
 		return false;
+	}
+
+	private String removeRepeatingMarker(Event aNewEvent) {
+		ExtendedProperties tempExtendedProperties = aNewEvent.getExtendedProperties();
+		if (tempExtendedProperties != null) {
+			String tempTextWithoutRepeatingInfo = (String) tempExtendedProperties.get("TextWithoutRepeatingInfo");
+			if (tempTextWithoutRepeatingInfo != null) {
+				return tempTextWithoutRepeatingInfo;
+			}
+		}
+		String tempSummary = aNewEvent.getSummary();
+		List<String> tempLocaleRepeatingMarkers = localeRepeatingMarkers;
+		for (String tempLocaleMarker : tempLocaleRepeatingMarkers) {
+			int tempMarker = tempSummary.lastIndexOf(tempLocaleMarker);
+			if (tempMarker > 2) {
+				String tempRemoved = tempSummary.substring(0, tempMarker);
+				return tempRemoved;
+			}
+		}
+		return tempSummary;
 	}
 
 	private ArrayList<Event> getCurrentItems(com.google.api.services.calendar.Calendar client, String tempDeadlineCalendarId) throws IOException {
@@ -443,18 +483,25 @@ public class GoogleSync {
 		Date tempTodayMorning = tempCal.getTime();
 		Event event = new Event();
 		Date startDate;
+		ExtendedProperties tempExtendedProperties = event.getExtendedProperties();
+		if (tempExtendedProperties == null) {
+			tempExtendedProperties = new ExtendedProperties();
+			event.setExtendedProperties(tempExtendedProperties);
+		}
+		String tempTextWithoutRepeatingInfo = aDeadline.getTextWithoutRepeatingInfo();
+		tempExtendedProperties.put("TextWithoutRepeatingInfo", tempTextWithoutRepeatingInfo);
 		String tempText;
 		if (aDeadline.getWhen().before(tempToday)) {
-			tempText = OVERDUE_MARKER + aDeadline.getTextWithoutRepeatingInfo() + " !" + DATE_FORMAT.format(aDeadline.getWhen()) + "!";
+			tempText = OVERDUE_MARKER + tempTextWithoutRepeatingInfo + " !" + DATE_FORMAT.format(aDeadline.getWhen()) + "!";
 			startDate = tempTodayMorning;
 		} else {
-			tempText = aDeadline.getTextWithoutRepeatingInfo();
+			tempText = tempTextWithoutRepeatingInfo;
 			startDate = aDeadline.getWhen();
 		}
 		if (aDeadline.getEndPoint() != null) {
-			tempText += " (-" + DeadlineGui.dateFormatWithDay.format(aDeadline.getEndPoint()) + ")";
+			tempText += REPEATING_MARKER + "-" + DeadlineGui.dateFormatWithDay.format(aDeadline.getEndPoint()) + ")";
 		} else if (aDeadline.getRepeating() != null) {
-			tempText += " (" + DeadlineGui.dateFormatWithDay.format(aDeadline.getRepeating()) + ")";
+			tempText += REPEATING_MARKER + DeadlineGui.dateFormatWithDay.format(aDeadline.getRepeating()) + ")";
 		}
 		event.setSummary(tempText);
 		tempCal.setTime(startDate);
@@ -479,7 +526,17 @@ public class GoogleSync {
 	private Deadline createDeadlineFromGoogleEvent(Event anEvent) {
 		String tempSummary = anEvent.getSummary();
 		Deadline tempDeadline = new Deadline();
-		tempDeadline.setTextWithoutRepeatingInfo(tempSummary);
+		ExtendedProperties tempExtendedProperties = anEvent.getExtendedProperties();
+		if (tempExtendedProperties != null) {
+			String tempTextWithoutRepeatingInfo = (String) tempExtendedProperties.get("TextWithoutRepeatingInfo");
+			if (tempTextWithoutRepeatingInfo != null) {
+				tempDeadline.setTextWithoutRepeatingInfo(tempTextWithoutRepeatingInfo);
+			} else {
+				tempDeadline.setTextWithoutRepeatingInfo(tempSummary);
+			}
+		} else {
+			tempDeadline.setTextWithoutRepeatingInfo(tempSummary);
+		}
 
 		EventDateTime tempStart = anEvent.getStart();
 		Date tempWhen;

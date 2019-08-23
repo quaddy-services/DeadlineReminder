@@ -38,6 +38,12 @@ import de.quaddy_services.deadlinereminder.ModelLoaderMustBeReleadedListener;
 import de.quaddy_services.deadlinereminder.extern.DoneSelectionListener;
 
 public class DeadlineGui extends JPanel {
+	/**
+	 * Attention, this format is different on JDK8 and JDK11
+	 * So. 04.12.2016
+	 *  vs
+	 * So 04.12.2016 
+	 */
 	public static DateFormat dateFormatWithDay = new SimpleDateFormat("EE dd.MM.yyyy");
 	public static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
 	private static final Logger LOGGER = LoggerFactory.getLogger(DeadlineGui.class);
