@@ -63,6 +63,7 @@
 						</goals>
 						<phase>package</phase>
 						<configuration>
+							<finalName>${pom.artifactId}</finalName>
 							<descriptorRefs>
 								<descriptorRef>jar-with-dependencies</descriptorRef>
 							</descriptorRefs>
