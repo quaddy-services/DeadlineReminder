@@ -100,7 +100,7 @@ public class FileStorage implements Storage {
 		String tempEncoding = "UTF-8";
 		// https://dzone.com/articles/java-may-use-utf-8-as-its-default-charset
 		UnicodeReader tempIn = new UnicodeReader(new FileInputStream(tempFile), tempEncoding);
-		LOGGER.info("Read " + tempFile + " with encoding=" + tempIn.getEncoding());
+		LOGGER.debug("Read " + tempFile + " with encoding=" + tempIn.getEncoding());
 		return new BufferedReader(tempIn);
 	}
 
@@ -464,7 +464,7 @@ public class FileStorage implements Storage {
 		if (!aFile.exists()) {
 			tempWriteBOM = true;
 		}
-		LOGGER.info("Write to " + aFile + " with encoding=UTF-16LE");
+		LOGGER.debug("Write to " + aFile + " with encoding=UTF-16LE");
 		// https://dzone.com/articles/java-may-use-utf-8-as-its-default-charset
 		FileOutputStream tempOut = new FileOutputStream(aFile, true);
 		if (tempWriteBOM) {

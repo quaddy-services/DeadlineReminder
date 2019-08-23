@@ -91,10 +91,10 @@ public class UnicodeReader extends Reader {
 
 		// Use given encoding
 		if (encoding == null) {
-			LOGGER.info("No BOM found");
+			LOGGER.debug("No BOM found");
 			internalInputStreamReader = new InputStreamReader(pushbackStream);
 		} else {
-			LOGGER.info("BOM found:" + encoding);
+			LOGGER.debug("BOM found:" + encoding);
 			internalInputStreamReader = new InputStreamReader(pushbackStream, encoding);
 		}
 	}
