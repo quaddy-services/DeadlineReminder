@@ -253,6 +253,13 @@ public class GoogleSync {
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Overdue events are deleted and recreated next day. The original event is
 				// already kept in calendar.
+				Event tempSameEvent = getSameEvent(tempNewEvents.keySet(), tempGoogleEvent);
+				if (tempSameEvent != null) {
+					LOGGER.info("Overdue " + tempSummary + " already correct.");
+					iCurrent.remove(); // do not delete on Google
+					tempNewEvents.remove(tempSameEvent); // do not add
+					continue;
+				}
 			} else if (isContainedIn(tempNewEvents.keySet(), tempGoogleEvent)) {
 				// Is still open. Avoid adding past events twice.
 				if (isContainedIn(tempAlreadyKeptEvents, tempGoogleEvent)) {
@@ -383,6 +390,15 @@ public class GoogleSync {
 			}
 		}
 		return false;
+	}
+
+	private Event getSameEvent(Collection<Event> aNewEvents, Event aEvent) {
+		for (Event tempNewEvent : aNewEvents) {
+			if (isSame(aEvent, tempNewEvent)) {
+				return tempNewEvent;
+			}
+		}
+		return null;
 	}
 
 	private void logInfo(String aString) {
