@@ -54,6 +54,7 @@ import de.quaddy_services.deadlinereminder.gui.DeadlineGui;
  */
 public class GoogleSync {
 	private static final String REPEATING_MARKER = " (";
+	private static final String REPEATING_MARKER_UNTIL = REPEATING_MARKER + "-";
 	private static final String OVERDUE_MARKER = "! ";
 	private static final Logger LOGGER = LoggerFactory.getLogger(GoogleSync.class);
 	private static final boolean DEBUG = false;
@@ -79,6 +80,13 @@ public class GoogleSync {
 				// maybe tempFormattedDay already contains a dot
 				tempLocaleMarkers.add(REPEATING_MARKER + tempFormattedDay.substring(0, 2) + " ");
 				tempLocaleMarkers.add(REPEATING_MARKER + tempFormattedDay.substring(0, 2) + ". ");
+			}
+			tempLocaleMarkers.add(REPEATING_MARKER_UNTIL + tempFormattedDay + " ");
+			tempLocaleMarkers.add(REPEATING_MARKER_UNTIL + tempFormattedDay + ". ");
+			if (tempFormattedDay.length() > 2) {
+				// maybe tempFormattedDay already contains a dot
+				tempLocaleMarkers.add(REPEATING_MARKER_UNTIL + tempFormattedDay.substring(0, 2) + " ");
+				tempLocaleMarkers.add(REPEATING_MARKER_UNTIL + tempFormattedDay.substring(0, 2) + ". ");
 			}
 		}
 		localeRepeatingMarkers = new ArrayList<>(tempLocaleMarkers);
@@ -537,7 +545,6 @@ public class GoogleSync {
 			event.setExtendedProperties(tempExtendedProperties);
 		}
 		String tempTextWithoutRepeatingInfo = aDeadline.getTextWithoutRepeatingInfo();
-		tempExtendedProperties.put("TextWithoutRepeatingInfo", tempTextWithoutRepeatingInfo);
 		String tempText;
 		if (aDeadline.getWhen().before(tempToday)) {
 			tempText = OVERDUE_MARKER + tempTextWithoutRepeatingInfo + " !" + DATE_FORMAT.format(aDeadline.getWhen()) + "!";
@@ -546,8 +553,9 @@ public class GoogleSync {
 			tempText = tempTextWithoutRepeatingInfo;
 			startDate = aDeadline.getWhen();
 		}
+		tempExtendedProperties.put("TextWithoutRepeatingInfo", tempText);
 		if (aDeadline.getEndPoint() != null) {
-			tempText += REPEATING_MARKER + "-" + DeadlineGui.dateFormatWithDay.format(aDeadline.getEndPoint()) + ")";
+			tempText += REPEATING_MARKER_UNTIL + DeadlineGui.dateFormatWithDay.format(aDeadline.getEndPoint()) + ")";
 		} else if (aDeadline.getRepeating() != null) {
 			tempText += REPEATING_MARKER + DeadlineGui.dateFormatWithDay.format(aDeadline.getRepeating()) + ")";
 		}
