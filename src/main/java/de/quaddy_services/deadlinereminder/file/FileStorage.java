@@ -3,13 +3,15 @@ package de.quaddy_services.deadlinereminder.file;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.io.Reader;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -77,7 +79,7 @@ public class FileStorage implements Storage {
 	private List<Deadline> readDeadlines(Date to, String tempFileName) throws FileNotFoundException, IOException {
 		List<Deadline> tempMatchingDeadlines = new ArrayList<Deadline>();
 		File tempFile = new File(getDirectory().getAbsolutePath() + "/" + tempFileName);
-		BufferedReader tempReader = new BufferedReader(createReader(tempFile));
+		BufferedReader tempReader = createReader(tempFile);
 		String tempLine;
 		while (null != (tempLine = tempReader.readLine())) {
 			List<Deadline> tempDeadlines = parseDeadline(tempLine, to != null);
@@ -91,13 +93,16 @@ public class FileStorage implements Storage {
 		return tempMatchingDeadlines;
 	}
 
-	protected Reader createReader(File tempFile) throws IOException {
+	protected BufferedReader createReader(File tempFile) throws IOException {
 		if (!tempFile.exists()) {
 			LOGGER.info("File does not exist: " + tempFile.getAbsolutePath());
 			tempFile.createNewFile();
-			return new StringReader("");
+			return new BufferedReader(new StringReader(""));
 		}
-		return new FileReader(tempFile);
+		String tempEncoding = "UTF-8";
+		// https://dzone.com/articles/java-may-use-utf-8-as-its-default-charset
+		LOGGER.info("Read " + tempFile + " with encoding=" + tempEncoding);
+		return new BufferedReader(new InputStreamReader(new FileInputStream(tempFile), tempEncoding));
 	}
 
 	private List<Deadline> parseDeadline(String tempLine, boolean aRepeating) {
@@ -413,7 +418,7 @@ public class FileStorage implements Storage {
 				}
 			}
 			if (tempDones.size() > 0) {
-				try (PrintWriter tempDone = new PrintWriter(new BufferedWriter(new FileWriter(getDirectory() + "/" + TERMIN_DONE_TXT, true)))) {
+				try (PrintWriter tempDone = new PrintWriter(createFileWriter(new File(getDirectory() + "/" + TERMIN_DONE_TXT)))) {
 					tempDone.println(INFO_PREFIX + new Date());
 					for (Deadline tempDeadline : tempDones) {
 						String tempLine = dateFormat.format(tempDeadline.getWhen()) + tempDeadline.getInfo();
@@ -434,7 +439,7 @@ public class FileStorage implements Storage {
 			if (!tempFile.exists()) {
 				tempFile.createNewFile();
 			}
-			try (FileWriter tempFileWriter = new FileWriter(tempFile, true)) {
+			try (BufferedWriter tempFileWriter = createFileWriter(tempFile)) {
 				for (Deadline tempDeadline : aDeadline) {
 					StringBuilder tempDeadlineText = new StringBuilder();
 					Date tempWhen = tempDeadline.getWhen();
@@ -456,5 +461,12 @@ public class FileStorage implements Storage {
 				}
 			}
 		}
+	}
+
+	private BufferedWriter createFileWriter(File aFile) throws UnsupportedEncodingException, FileNotFoundException {
+		LOGGER.info("Write to " + aFile + " with encoding=UTF-8");
+		// https://dzone.com/articles/java-may-use-utf-8-as-its-default-charset
+		OutputStreamWriter tempOutputStreamWriter = new OutputStreamWriter(new FileOutputStream(aFile), "UTF-8");
+		return new BufferedWriter(tempOutputStreamWriter);
 	}
 }

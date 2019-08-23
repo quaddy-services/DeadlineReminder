@@ -1,7 +1,7 @@
 package de.quaddy_services.deadlinereminder.file;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.Reader;
 import java.io.StringReader;
 import java.text.DecimalFormat;
 import java.util.Calendar;
@@ -28,14 +28,14 @@ public class FileStorageTest extends TestCase {
 		}
 
 		@Override
-		protected Reader createReader(File aTempFile) {
+		protected BufferedReader createReader(File aTempFile) {
 			if (aTempFile.getName().equals(TERMIN_DONE_TXT)) {
-				return new StringReader("");
+				return new BufferedReader(new StringReader(""));
 			}
 			if (aTempFile.getName().equals(TERMIN_GOOGLE_ADDED_TXT)) {
-				return new StringReader("");
+				return new BufferedReader(new StringReader(""));
 			}
-			return new StringReader(termin);
+			return new BufferedReader(new StringReader(termin));
 		}
 	}
 
