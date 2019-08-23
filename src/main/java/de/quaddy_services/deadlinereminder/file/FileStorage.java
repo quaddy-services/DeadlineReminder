@@ -464,14 +464,14 @@ public class FileStorage implements Storage {
 		if (!aFile.exists()) {
 			tempWriteBOM = true;
 		}
-		LOGGER.info("Write to " + aFile + " with encoding=UTF-8");
+		LOGGER.info("Write to " + aFile + " with encoding=UTF-16LE");
 		// https://dzone.com/articles/java-may-use-utf-8-as-its-default-charset
-		FileOutputStream tempOut = new FileOutputStream(aFile);
+		FileOutputStream tempOut = new FileOutputStream(aFile, true);
 		if (tempWriteBOM) {
-			// ((bom[0] == (byte) 0xEF) && (bom[1] == (byte) 0xBB) && (bom[2] == (byte) 0xBF)) {
-			tempOut.write(new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF });
+			// ((bom[0] == (byte) 0xFF) && (bom[1] == (byte) 0xFE)) {
+			tempOut.write(new byte[] { (byte) 0xFF, (byte) 0xFE });
 		}
-		OutputStreamWriter tempOutputStreamWriter = new OutputStreamWriter(tempOut, "UTF-8");
+		OutputStreamWriter tempOutputStreamWriter = new OutputStreamWriter(tempOut, "UTF-16LE");
 		return new BufferedWriter(tempOutputStreamWriter);
 	}
 }
