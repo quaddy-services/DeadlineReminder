@@ -19,7 +19,9 @@ import java.awt.Desktop.Action;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
+import java.util.Collection;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
@@ -67,8 +69,7 @@ public class OAuth2Native {
 
 	private static final String RESOURCE_LOCATION = "/client_secrets.json";
 
-	private static final String RESOURCE_PATH = ("shared/shared-sample-cmdline/src/main/resources" + RESOURCE_LOCATION)
-			.replace('/', File.separatorChar);
+	private static final String RESOURCE_PATH = ("shared/shared-sample-cmdline/src/main/resources" + RESOURCE_LOCATION).replace('/', File.separatorChar);
 
 	/**
 	 * Browser to open in case {@link Desktop#isDesktopSupported()} is {@code
@@ -101,11 +102,10 @@ public class OAuth2Native {
 		if (clientSecrets == null) {
 			InputStream inputStream = OAuth2Native.class.getResourceAsStream(RESOURCE_LOCATION);
 			Preconditions.checkNotNull(inputStream, "missing resource %s", RESOURCE_LOCATION);
-			clientSecrets = GoogleClientSecrets.load(jsonFactory, inputStream);
-			Preconditions.checkArgument(!clientSecrets.getDetails().getClientId().startsWith("[[")
-					&& !clientSecrets.getDetails().getClientSecret().startsWith("[["),
-					"Please enter your client ID and secret from the Google APIs Console in %s from the "
-							+ "root samples directory", RESOURCE_PATH);
+			clientSecrets = GoogleClientSecrets.load(jsonFactory, new InputStreamReader(inputStream, "UTF-8"));
+			Preconditions.checkArgument(
+					!clientSecrets.getDetails().getClientId().startsWith("[[") && !clientSecrets.getDetails().getClientSecret().startsWith("[["),
+					"Please enter your client ID and secret from the Google APIs Console in %s from the " + "root samples directory", RESOURCE_PATH);
 		}
 		return clientSecrets;
 	}
@@ -122,13 +122,12 @@ public class OAuth2Native {
 	 * @param scopes
 	 *            OAuth 2.0 scopes
 	 */
-	public static Credential authorize(HttpTransport transport, JsonFactory jsonFactory,
-			VerificationCodeReceiver receiver, Iterable<String> scopes) throws Exception {
+	public static Credential authorize(HttpTransport transport, JsonFactory jsonFactory, VerificationCodeReceiver receiver, Collection<String> scopes)
+			throws Exception {
 		String redirectUri = receiver.getRedirectUri();
 		GoogleClientSecrets tempClientSecrets = loadClientSecrets(jsonFactory);
 		// redirect to an authorization page
-		GoogleAuthorizationCodeFlow.Builder tempBuilder = new GoogleAuthorizationCodeFlow.Builder(transport,
-				jsonFactory, tempClientSecrets, scopes);
+		GoogleAuthorizationCodeFlow.Builder tempBuilder = new GoogleAuthorizationCodeFlow.Builder(transport, jsonFactory, tempClientSecrets, scopes);
 		tempBuilder.setCredentialStore(new PersistentCredentialStore());
 		GoogleAuthorizationCodeFlow flow = tempBuilder.build();
 		String tempUserName = System.getProperty("user.name", "-");
