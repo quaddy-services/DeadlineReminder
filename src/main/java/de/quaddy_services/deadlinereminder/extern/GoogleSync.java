@@ -242,17 +242,25 @@ public class GoogleSync {
 		ArrayList<Event> tempCurrentEvents;
 		tempCurrentEvents = getCurrentItems(client, tempDeadlineCalendarId);
 		logInfo("Already at Google (including history): " + tempCurrentEvents.size());
+		List<Event> tempAlreadyKeptEvents = new ArrayList<>();
+		Set<Event> tempDuplicateGoogleEvents = new HashSet<>();
 		long tempNow = System.currentTimeMillis();
 		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
-			Event tempEvent = iCurrent.next();
-			EventDateTime tempStart = tempEvent.getStart();
+			Event tempGoogleEvent = iCurrent.next();
+			EventDateTime tempStart = tempGoogleEvent.getStart();
 			DateTime tempDate = tempStart.getDate();
-			String tempSummary = tempEvent.getSummary();
+			String tempSummary = tempGoogleEvent.getSummary();
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Overdue events are deleted and recreated next day. The original event is
 				// already kept in calendar.
-			} else if (isContainedIn(tempNewEvents.keySet(), tempEvent)) {
+			} else if (isContainedIn(tempNewEvents.keySet(), tempGoogleEvent)) {
 				// Is still open. Avoid adding past events twice.
+				if (isContainedIn(tempAlreadyKeptEvents, tempGoogleEvent)) {
+					LOGGER.info("Duplicate Google entry: " + tempSummary + " event=" + tempGoogleEvent);
+					tempDuplicateGoogleEvents.add(tempGoogleEvent);
+				} else {
+					tempAlreadyKeptEvents.add(tempGoogleEvent);
+				}
 			} else {
 				if (tempDate != null && tempDate.getValue() < tempNow) {
 					// Keep finished event.
@@ -265,13 +273,16 @@ public class GoogleSync {
 					iCurrent.remove();
 					continue;
 				}
-				LOGGER.info("Found a new Event: " + tempEvent);
+				LOGGER.info("Found a new Event: " + tempGoogleEvent);
 			}
 		}
 		logInfo("Already at Google to be synced: " + tempCurrentEvents.size());
-		List<Event> tempAlreadyKeptEvents = new ArrayList<>();
 		for (Iterator<Event> iCurrent = tempCurrentEvents.iterator(); iCurrent.hasNext();) {
 			Event tempEvent = iCurrent.next();
+			if (tempDuplicateGoogleEvents.contains(tempEvent)) {
+				LOGGER.debug("Will be deleted below: {}", tempEvent);
+				continue;
+			}
 			boolean tempRemoved = false;
 			for (Iterator<Map.Entry<Event, Deadline>> iNew = tempNewEvents.entrySet().iterator(); iNew.hasNext();) {
 				Map.Entry<Event, Deadline> tempMapEntry = iNew.next();
@@ -311,6 +322,7 @@ public class GoogleSync {
 
 			logInfo("No matching current event found for Google=" + tempStart + " " + tempSummary);
 		}
+		logInfo("Already at Google to be deleted: " + tempCurrentEvents.size());
 		for (Event tempEvent : tempCurrentEvents) {
 			String tempSummary = tempEvent.getSummary();
 			EventDateTime tempStart = tempEvent.getStart();
