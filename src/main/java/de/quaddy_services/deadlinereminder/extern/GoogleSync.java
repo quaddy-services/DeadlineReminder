@@ -347,6 +347,7 @@ public class GoogleSync {
 			logInfo("Deleted " + tempStart + " " + tempSummary + " " + tempEvent);
 			slowDown();
 		}
+		logInfo("To be added to Google: " + tempNewEvents.size());
 		for (Event tempEvent : tempNewEvents.keySet()) {
 			EventDateTime tempStart = tempEvent.getStart();
 			Event tempResult = config(client.events().insert(tempDeadlineCalendarId, tempEvent)).execute();
