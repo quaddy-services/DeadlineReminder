@@ -61,6 +61,7 @@ public class GoogleSync {
 
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yy");
 	private static DateTime lastSyncStarted;
+	private static int syncErrorCount = 0;
 
 	private Thread t = null;
 	private LogListener logListener = null;
@@ -108,22 +109,18 @@ public class GoogleSync {
 					} else {
 						// Keep last log statement.
 					}
+					syncErrorCount = 0;
 				} catch (SocketTimeoutException e) {
 					logError("Retry later...", e);
 				} catch (Exception e) {
-					logError("Error on authenticatino", e);
-					String tempUserName = System.getProperty("user.name", "-");
-					PersistentCredentialStore tempPersistentCredentialStore = new PersistentCredentialStore();
-					tempPersistentCredentialStore.delete(tempUserName);
-					// try again
-					try {
-						logInfo("Again:Start");
-						push(aOpenDeadlines, aDoneSelectionListener);
-						logInfo("Again:Finished");
-					} catch (Exception e2) {
-						logError("Again:Error", e2);
+					syncErrorCount++;
+					logError("Error on sync (syncErrorCount=" + syncErrorCount + ")", e);
+					if (syncErrorCount > 10) {
+						logInfo("Next time request new authentication token.");
+						String tempUserName = System.getProperty("user.name", "-");
+						PersistentCredentialStore tempPersistentCredentialStore = new PersistentCredentialStore();
+						tempPersistentCredentialStore.delete(tempUserName);
 					}
-
 				} finally {
 					t = null;
 				}

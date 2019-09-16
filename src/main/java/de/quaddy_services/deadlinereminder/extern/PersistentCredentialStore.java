@@ -22,6 +22,7 @@ public class PersistentCredentialStore implements CredentialStore {
 
 	public boolean delete(String aUserId) {
 		File tempFile = getStoreFile(aUserId);
+		LOGGER.info("Delete " + tempFile.getAbsolutePath());
 		return tempFile.delete();
 	}
 
