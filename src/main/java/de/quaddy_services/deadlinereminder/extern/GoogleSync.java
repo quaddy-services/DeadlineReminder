@@ -288,7 +288,7 @@ public class GoogleSync {
 					iCurrent.remove();
 					continue;
 				}
-				LOGGER.info("Found a new Event: " + tempSummary + " Date=" + tempDate + " DateTime=" + tempDateTime + " " + tempGoogleEvent);
+				LOGGER.debug("Found a new Event: " + tempSummary + " Date=" + tempDate + " DateTime=" + tempDateTime + " " + tempGoogleEvent);
 			}
 		}
 		logInfo("Already at Google to be synced: " + tempCurrentGoogleEvents.size());
