@@ -16,7 +16,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 
 import org.slf4j.Logger;
@@ -32,6 +34,7 @@ public class FileStorage implements Storage {
 	public static final String TERMIN_GOOGLE_ADDED_TXT = "termin-added-by-google.txt";
 	private static final String INFO_PREFIX = "--";
 	private static final String INFO_PREFIX2 = "#";
+	private static final String ID_PREFIX = "ID:";
 	public static final String TERMIN_DONE_TXT = "termin-done.txt";
 	private static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
 	private static DateFormat timeFormat = new SimpleDateFormat("HH:mm");
@@ -78,11 +81,20 @@ public class FileStorage implements Storage {
 		List<Deadline> tempMatchingDeadlines = new ArrayList<Deadline>();
 		File tempFile = new File(getDirectory().getAbsolutePath() + "/" + tempFileName);
 		BufferedReader tempReader = createReader(tempFile);
+		Map<String, Deadline> tempIdsAdded = new HashMap<>();
 		String tempLine;
 		while (null != (tempLine = tempReader.readLine())) {
 			List<Deadline> tempDeadlines = parseDeadline(tempLine, to != null);
 			for (Deadline tempDeadline : tempDeadlines) {
 				if (tempDeadline != null && (to == null || to.after(tempDeadline.getWhen()))) {
+					String tempId = tempDeadline.getId();
+					if (tempId != null) {
+						Deadline tempPreviouslyAdded = tempIdsAdded.put(tempId, tempDeadline);
+						if (tempPreviouslyAdded != null) {
+							// Remove the outdated one (termin-added-from-google is appended always)
+							tempMatchingDeadlines.remove(tempPreviouslyAdded);
+						}
+					}
 					tempMatchingDeadlines.add(tempDeadline);
 				}
 			}
@@ -104,8 +116,9 @@ public class FileStorage implements Storage {
 		return new BufferedReader(tempIn);
 	}
 
-	private List<Deadline> parseDeadline(String tempLine, boolean aRepeating) {
+	private List<Deadline> parseDeadline(String aLine, boolean aRepeating) {
 		List<Deadline> tempDeadlines = new ArrayList<Deadline>();
+		String tempLine = aLine;
 		if (tempLine.startsWith(INFO_PREFIX)) {
 			return tempDeadlines;
 		}
@@ -114,6 +127,14 @@ public class FileStorage implements Storage {
 		}
 		if (tempLine.trim().length() == 0) {
 			return tempDeadlines;
+		}
+		String tempId;
+		if (tempLine.startsWith(ID_PREFIX)) {
+			int tempTabPos = tempLine.indexOf("\t");
+			tempId = tempLine.substring(ID_PREFIX.length(), tempTabPos);
+			tempLine = tempLine.substring(tempTabPos + 1);
+		} else {
+			tempId = null;
 		}
 		try {
 			String tempDateChars = tempLine.substring(0, 10);
@@ -130,8 +151,9 @@ public class FileStorage implements Storage {
 				addRepeating(tempDeadlines, tempDate, tempInfo);
 			} else {
 				Deadline tempDeadline = new Deadline();
-				tempDate = addTime(tempDate, tempInfo);
-				tempDeadline.setWhen(tempDate);
+				tempDeadline.setId(tempId);
+				Date tempDateTime = addTime(tempDate, tempInfo);
+				tempDeadline.setWhen(tempDateTime);
 				tempDeadline.setInfo(tempInfo);
 				tempDeadlines.add(tempDeadline);
 			}
@@ -438,6 +460,11 @@ public class FileStorage implements Storage {
 			try (BufferedWriter tempFileWriter = createFileWriter(tempFile)) {
 				for (Deadline tempDeadline : aDeadline) {
 					StringBuilder tempDeadlineText = new StringBuilder();
+					if (tempDeadline.getId() != null) {
+						tempDeadlineText.append(ID_PREFIX);
+						tempDeadlineText.append(tempDeadline.getId());
+						tempDeadlineText.append("\t");
+					}
 					Date tempWhen = tempDeadline.getWhen();
 					Calendar tempCalendar = Calendar.getInstance();
 					tempCalendar.setTime(tempWhen);

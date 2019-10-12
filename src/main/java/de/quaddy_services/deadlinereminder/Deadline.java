@@ -13,6 +13,7 @@ public class Deadline {
 	private Date repeating;
 	private String textWithoutRepeatingInfo;
 	private Date endPoint;
+	private String id;
 
 	public Date getWhen() {
 		return when;
@@ -116,5 +117,20 @@ public class Deadline {
 	 */
 	public final Date getEndPoint() {
 		return endPoint;
+	}
+
+	/**
+	 * ID (e.g. GoogleId)
+	 * @return
+	 */
+	public String getId() {
+		return id;
+	}
+
+	/**
+	 * @param aId the id to set
+	 */
+	public final void setId(String aId) {
+		id = aId;
 	}
 }
