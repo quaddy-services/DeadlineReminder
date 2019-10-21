@@ -178,9 +178,18 @@ public class Deadline {
 					tempCal.add(Calendar.MINUTE, tempTimeCal.get(Calendar.MINUTE));
 					Date tempDateWithTime = tempCal.getTime();
 					setWhen(tempDateWithTime);
+
 					int tempPos = tempInfo.indexOf(tempToken);
-					String tempNewInfo = tempInfo.substring(0, tempPos) + tempInfo.substring(tempPos + tempToken.length());
+					String tempNewInfo = tempInfo.substring(0, tempPos) + tempInfo.substring(tempPos + tempToken.length()).trim();
 					setInfo(tempNewInfo.trim());
+
+					String tempTextWithoutRepeatingInfo = textWithoutRepeatingInfo;
+					if (tempTextWithoutRepeatingInfo != null) {
+						int tempPos2 = tempTextWithoutRepeatingInfo.indexOf(tempToken);
+						String tempNewTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, tempPos2)
+								+ tempTextWithoutRepeatingInfo.substring(tempPos2 + tempToken.length()).trim();
+						setTextWithoutRepeatingInfo(tempNewTextWithoutRepeatingInfo);
+					}
 					return;
 				} catch (ParseException e) {
 					// ignore

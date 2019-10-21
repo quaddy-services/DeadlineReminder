@@ -269,8 +269,8 @@ public class FileStorage implements Storage {
 				}
 				tempDeadline.setWhen(tempWhen);
 				tempDeadline.setInfo(tempInfo);
-				tempDeadline.extractTimeFromInfo();
 				tempDeadline.setTextWithoutRepeatingInfo(tempStepAndUnit.textWithoutRepeatingInfo);
+				tempDeadline.extractTimeFromInfo();
 				tempDeadline.setRepeating(tempDate);
 				tempDeadline.setEndPoint(tempEndPoint);
 				tempDeadlines.add(tempDeadline);
