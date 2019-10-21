@@ -350,6 +350,20 @@ public class GoogleSync {
 			logInfo("No matching current event found for Google=" + tempStart + " " + tempSummary);
 		}
 		logInfo("Already at Google to be deleted: " + tempCurrentGoogleEvents.size());
+		logInfo("To be added to Google: " + tempNewEvents.size());
+		for (Event tempEvent : tempNewEvents.keySet()) {
+			EventDateTime tempStart = tempEvent.getStart();
+			Insert tempConfig = config(client.events().insert(tempDeadlineCalendarId, tempEvent));
+			try {
+				Event tempResult = tempConfig.execute();
+				logInfo("Added " + tempStart + " " + tempEvent.getSummary() + " " + tempResult);
+			} catch (GoogleJsonResponseException e) {
+				logError("Error adding " + tempStart + " " + tempEvent.getSummary() + " " + tempEvent, e);
+				throw e;
+			}
+			slowDown();
+		}
+		logInfo("Already at Google to be deleted: " + tempCurrentGoogleEvents.size());
 		for (Event tempEvent : tempCurrentGoogleEvents) {
 			String tempSummary = tempEvent.getSummary();
 			EventDateTime tempStart = tempEvent.getStart();
@@ -360,19 +374,6 @@ public class GoogleSync {
 				logInfo("Deleted " + tempStart + " " + tempSummary + " " + tempEvent);
 			} catch (GoogleJsonResponseException e) {
 				logError("Error deleting " + tempStart + " " + tempEvent.getSummary() + " " + tempEvent, e);
-				throw e;
-			}
-			slowDown();
-		}
-		logInfo("To be added to Google: " + tempNewEvents.size());
-		for (Event tempEvent : tempNewEvents.keySet()) {
-			EventDateTime tempStart = tempEvent.getStart();
-			Insert tempConfig = config(client.events().insert(tempDeadlineCalendarId, tempEvent));
-			try {
-				Event tempResult = tempConfig.execute();
-				logInfo("Added " + tempStart + " " + tempEvent.getSummary() + " " + tempResult);
-			} catch (GoogleJsonResponseException e) {
-				logError("Error adding " + tempStart + " " + tempEvent.getSummary() + " " + tempEvent, e);
 				throw e;
 			}
 			slowDown();
@@ -478,6 +479,12 @@ public class GoogleSync {
 	 *
 	 */
 	private static synchronized DateTime getLastSyncStarted() {
+		if (lastSyncStarted == null) {
+			Long tempFileDate = FileStorage.getFileDate(FileStorage.TERMIN_GOOGLE_ADDED_TXT);
+			if (tempFileDate != null) {
+				lastSyncStarted = new DateTime(new Date(tempFileDate));
+			}
+		}
 		return lastSyncStarted;
 	}
 
