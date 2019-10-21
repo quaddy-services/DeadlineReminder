@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -30,6 +31,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar.Events.Delete;
+import com.google.api.services.calendar.Calendar.Events.Insert;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.CalendarList;
 import com.google.api.services.calendar.model.CalendarListEntry;
@@ -353,15 +355,26 @@ public class GoogleSync {
 			EventDateTime tempStart = tempEvent.getStart();
 
 			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
-			config(tempDelete).execute();
-			logInfo("Deleted " + tempStart + " " + tempSummary + " " + tempEvent);
+			try {
+				config(tempDelete).execute();
+				logInfo("Deleted " + tempStart + " " + tempSummary + " " + tempEvent);
+			} catch (GoogleJsonResponseException e) {
+				logError("Error deleting " + tempStart + " " + tempEvent.getSummary() + " " + tempEvent, e);
+				throw e;
+			}
 			slowDown();
 		}
 		logInfo("To be added to Google: " + tempNewEvents.size());
 		for (Event tempEvent : tempNewEvents.keySet()) {
 			EventDateTime tempStart = tempEvent.getStart();
-			Event tempResult = config(client.events().insert(tempDeadlineCalendarId, tempEvent)).execute();
-			logInfo("Added " + tempStart + " " + tempEvent.getSummary() + " " + tempResult);
+			Insert tempConfig = config(client.events().insert(tempDeadlineCalendarId, tempEvent));
+			try {
+				Event tempResult = tempConfig.execute();
+				logInfo("Added " + tempStart + " " + tempEvent.getSummary() + " " + tempResult);
+			} catch (GoogleJsonResponseException e) {
+				logError("Error adding " + tempStart + " " + tempEvent.getSummary() + " " + tempEvent, e);
+				throw e;
+			}
 			slowDown();
 		}
 		setLastSyncStarted(new DateTime(tempStartMillis));
