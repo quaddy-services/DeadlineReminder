@@ -1,6 +1,11 @@
 package de.quaddy_services.deadlinereminder;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.StringTokenizer;
 
 public class Deadline {
 	public Deadline() {
@@ -75,7 +80,7 @@ public class Deadline {
 		if (info == null) {
 			if (other.info != null)
 				return false;
-		} else if (!info.equals(other.info))
+		} else if (!info.trim().equals(other.info.trim()))
 			return false;
 		if (when == null) {
 			if (other.when != null)
@@ -132,5 +137,56 @@ public class Deadline {
 	 */
 	public final void setId(String aId) {
 		id = aId;
+	}
+
+	public boolean isWholeDayEvent() {
+		//TODO replace by boolean
+		Calendar tempCal = Calendar.getInstance();
+		tempCal.setTime(getWhen());
+		boolean tempIsWholeDayEvent = tempCal.get(Calendar.HOUR_OF_DAY) == 0 && tempCal.get(Calendar.MINUTE) == 0;
+
+		return tempIsWholeDayEvent;
+	}
+
+	private static DateFormat timeFormat = new SimpleDateFormat("HH:mm");
+
+	/**
+	 * Try to add a time. e.g. *1w 17:00 David Nachhilfe
+	 *
+	 * @param aDate
+	 * @param aInfo
+	 * @return
+	 */
+	public void extractTimeFromInfo() {
+		//		private Date addTime(Date aDate, String aInfo) {
+		String tempInfo = getInfo();
+		StringTokenizer tempTokens = new StringTokenizer(tempInfo, "* ");
+		while (tempTokens.hasMoreTokens()) {
+			String tempToken = tempTokens.nextToken();
+			if (tempToken.length() > 3 && Character.isDigit(tempToken.charAt(0))) {
+				try {
+					Date tempTime;
+					tempTime = timeFormat.parse(tempToken);
+					// found a valid time
+
+					Date tempDateWithoutTime = getWhen();
+					Calendar tempCal = Calendar.getInstance();
+					tempCal.setTime(tempDateWithoutTime);
+					Calendar tempTimeCal = Calendar.getInstance();
+					tempTimeCal.setTime(tempTime);
+					tempCal.add(Calendar.HOUR_OF_DAY, tempTimeCal.get(Calendar.HOUR_OF_DAY));
+					tempCal.add(Calendar.MINUTE, tempTimeCal.get(Calendar.MINUTE));
+					Date tempDateWithTime = tempCal.getTime();
+					setWhen(tempDateWithTime);
+					int tempPos = tempInfo.indexOf(tempToken);
+					String tempNewInfo = tempInfo.substring(0, tempPos) + tempInfo.substring(tempPos + tempToken.length());
+					setInfo(tempNewInfo.trim());
+					return;
+				} catch (ParseException e) {
+					// ignore
+				}
+			}
+		}
+
 	}
 }

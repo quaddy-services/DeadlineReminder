@@ -19,7 +19,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,9 +151,9 @@ public class FileStorage implements Storage {
 			} else {
 				Deadline tempDeadline = new Deadline();
 				tempDeadline.setId(tempId);
-				Date tempDateTime = addTime(tempDate, tempInfo);
-				tempDeadline.setWhen(tempDateTime);
+				tempDeadline.setWhen(tempDate);
 				tempDeadline.setInfo(tempInfo);
+				tempDeadline.extractTimeFromInfo();
 				tempDeadlines.add(tempDeadline);
 			}
 		} catch (Exception e) {
@@ -168,47 +167,6 @@ public class FileStorage implements Storage {
 
 		}
 		return tempDeadlines;
-	}
-
-	/**
-	 * Try to add a time. e.g. *1w 17:00 David Nachhilfe
-	 *
-	 * @param aDate
-	 * @param aInfo
-	 * @return
-	 */
-	private Date addTime(Date aDate, String aInfo) {
-		Date tempDate = aDate;
-		Date tempTime = null;
-		StringTokenizer tempTokens = new StringTokenizer(aInfo, "* ");
-		while (tempTokens.hasMoreTokens()) {
-			String tempToken = tempTokens.nextToken();
-			if (tempToken.length() > 3 && Character.isDigit(tempToken.charAt(0))) {
-				try {
-					tempTime = timeFormat.parse(tempToken);
-					break;
-				} catch (ParseException e) {
-					// ignore
-				}
-			}
-		}
-		if (tempTime == null) {
-			return aDate;
-			//			try {
-			//				tempTime = timeFormat.parse("08:00");
-			//			} catch (ParseException e) {
-			//				// ignore
-			//			}
-		}
-		Calendar tempCal = Calendar.getInstance();
-		tempCal.setTime(tempDate);
-		Calendar tempTimeCal = Calendar.getInstance();
-		tempTimeCal.setTime(tempTime);
-		tempCal.add(Calendar.HOUR_OF_DAY, tempTimeCal.get(Calendar.HOUR_OF_DAY));
-		tempCal.add(Calendar.MINUTE, tempTimeCal.get(Calendar.MINUTE));
-		tempDate = tempCal.getTime();
-
-		return tempDate;
 	}
 
 	private class UnitAndStep {
@@ -309,13 +267,9 @@ public class FileStorage implements Storage {
 				if (tempEndPoint != null && tempWhen.after(tempEndPoint)) {
 					break;
 				}
-				if (tempStepAndUnit.textWithoutRepeatingInfo != null) {
-					tempWhen = addTime(tempWhen, tempStepAndUnit.textWithoutRepeatingInfo);
-				} else {
-					tempWhen = addTime(tempWhen, tempInfo);
-				}
 				tempDeadline.setWhen(tempWhen);
 				tempDeadline.setInfo(tempInfo);
+				tempDeadline.extractTimeFromInfo();
 				tempDeadline.setTextWithoutRepeatingInfo(tempStepAndUnit.textWithoutRepeatingInfo);
 				tempDeadline.setRepeating(tempDate);
 				tempDeadline.setEndPoint(tempEndPoint);

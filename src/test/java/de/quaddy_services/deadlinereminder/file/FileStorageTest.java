@@ -90,17 +90,19 @@ public class FileStorageTest extends TestCase {
 	}
 
 	public void testPastWeek() {
-		TestFileStorage tempTestFileStorage = new TestFileStorage("18.03.2019*1w 16:00 Lisa Reitstunde");
+		TestFileStorage tempTestFileStorage;
+		if (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY) {
+			// on monday one week less is returned as 18.03.2019 is monday.
+			tempTestFileStorage = new TestFileStorage("17.03.2019*1w 16:00 Lisa Reitstunde");
+		} else {
+			tempTestFileStorage = new TestFileStorage("18.03.2019*1w 16:00 Lisa Reitstunde");
+		}
 		Calendar tempTo = Calendar.getInstance();
 		tempTo.add(Calendar.DAY_OF_YEAR, 42);
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
 		logDeadlines(tempDeadlines);
-		if (Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.MONDAY) {
-			// on monday one week less is returned as 18.03.2019 is monday.
-			assertEquals(8, tempDeadlines.size());
-		} else {
-			assertEquals(9, tempDeadlines.size());
-		}
+
+		assertEquals(9, tempDeadlines.size());
 
 	}
 
@@ -139,7 +141,7 @@ public class FileStorageTest extends TestCase {
 		logDeadlines(tempDeadlines);
 		assertEquals(30, tempDeadlines.size());
 		assertEquals("*11:00 testDaily", tempDeadlines.get(0).getTextWithoutRepeatingInfo());
-		assertEquals("*1d 11:00 testDaily", tempDeadlines.get(0).getInfo());
+		assertEquals("*1d  testDaily", tempDeadlines.get(0).getInfo());
 		Date tempWhen = tempDeadlines.get(0).getWhen();
 		Calendar tempWhenCal = Calendar.getInstance();
 		tempWhenCal.setTime(tempWhen);
@@ -196,7 +198,7 @@ public class FileStorageTest extends TestCase {
 		Calendar tempWhenCal = Calendar.getInstance();
 		tempWhenCal.setTime(tempWhen);
 		assertEquals(11, tempWhenCal.get(Calendar.HOUR_OF_DAY));
-		assertEquals("*1d-" + tempTenDays + " 11:00 testDailyWithEnd", tempDeadlines.get(0).getInfo());
+		assertEquals("*1d-" + tempTenDays + "  testDailyWithEnd", tempDeadlines.get(0).getInfo());
 	}
 
 	/**

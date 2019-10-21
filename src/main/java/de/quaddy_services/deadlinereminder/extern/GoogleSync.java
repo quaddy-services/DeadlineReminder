@@ -671,9 +671,8 @@ public class GoogleSync {
 		} else if (aDeadline.getRepeating() != null) {
 			tempText += REPEATING_MARKER + DeadlineGui.dateFormatWithDay.format(aDeadline.getRepeating()) + ")";
 		}
-		event.setSummary(tempText);
-		tempCal.setTime(startDate);
-		boolean tempIsWholeDayEvent = tempCal.get(Calendar.HOUR_OF_DAY) == 0 && tempCal.get(Calendar.MINUTE) == 0;
+		event.setSummary(tempText.trim());
+		boolean tempIsWholeDayEvent = aDeadline.isWholeDayEvent();
 		if (tempIsWholeDayEvent) {
 			event.setStart(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
 			event.setEnd(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000).toString())));

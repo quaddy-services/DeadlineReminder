@@ -45,6 +45,7 @@ public class DeadlineGui extends JPanel {
 	 * So 04.12.2016 
 	 */
 	public static DateFormat dateFormatWithDay = new SimpleDateFormat("EE dd.MM.yyyy");
+	private static DateFormat timeFormat = new SimpleDateFormat("HH:mm");
 	public static DateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
 	private static final Logger LOGGER = LoggerFactory.getLogger(DeadlineGui.class);
 
@@ -81,11 +82,12 @@ public class DeadlineGui extends JPanel {
 
 		tempContentPanel.setLayout(new GridBagLayout());
 		GridBagConstraints tempGBC = new GridBagConstraints();
-		tempGBC.fill = GridBagConstraints.NONE;
+		tempGBC.fill = GridBagConstraints.HORIZONTAL;
 		tempGBC.anchor = GridBagConstraints.WEST;
 		tempGBC.gridx = 0;
 		tempGBC.gridy = 0;
 		tempGBC.insets = new Insets(0, 0, -6, 0);
+		tempGBC.weightx = 1.0;
 		Calendar tempCal = Calendar.getInstance();
 		Date tempToday = tempCal.getTime();
 		tempCal.add(Calendar.DAY_OF_YEAR, 2);
@@ -109,7 +111,11 @@ public class DeadlineGui extends JPanel {
 
 	private void addDeadlineRow(JPanel tempContentPanel, GridBagConstraints tempGBC, Date tempToday, Date tempOverTomorow, Date tempNextWeek,
 			Date tempOverNextWeek, final Deadline tempDeadline) {
-		String tempText = dateFormatWithDay.format(tempDeadline.getWhen()) + ": " + tempDeadline.getTextWithoutRepeatingInfo();
+		String tempText = dateFormatWithDay.format(tempDeadline.getWhen()) + ": ";
+		if (!tempDeadline.isWholeDayEvent()) {
+			tempText += timeFormat.format(tempDeadline.getWhen()) + " ";
+		}
+		tempText += tempDeadline.getTextWithoutRepeatingInfo();
 		if (tempDeadline.getEndPoint() != null) {
 			tempText += " (-" + dateFormat.format(tempDeadline.getEndPoint()) + ")";
 		} else if (tempDeadline.getRepeating() != null) {
@@ -129,8 +135,25 @@ public class DeadlineGui extends JPanel {
 		} else if (tempDeadline.getRepeating() != null) {
 			tempCheckBox.setForeground(Color.GRAY);
 		}
+
+		JPanel tempOneLine = new JPanel();
+		tempOneLine.setLayout(new GridBagLayout());
+		GridBagConstraints tempOneLineGBC = new GridBagConstraints();
+		tempOneLineGBC.gridx = 0;
+		tempOneLineGBC.weightx = 1.0;
+		tempOneLineGBC.fill = GridBagConstraints.BOTH;
+		tempOneLine.add(tempCheckBox, tempOneLineGBC);
+		if (tempDeadline.getId() != null) {
+			tempOneLineGBC.gridx++;
+			tempOneLineGBC.weightx = 0.1;
+			tempOneLineGBC.anchor = GridBagConstraints.EAST;
+			JLabel tempComp = new JLabel("(added via GoogleCalendar)");
+			tempComp.setFont(new Font(Font.SERIF, 0, 9));
+			tempOneLine.add(tempComp, tempOneLineGBC);
+		}
+
 		tempGBC.gridy++;
-		tempContentPanel.add(tempCheckBox, tempGBC);
+		tempContentPanel.add(tempOneLine, tempGBC);
 		tempCheckBox.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent aE) {
