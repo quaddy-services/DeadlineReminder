@@ -535,9 +535,12 @@ public class GoogleSync {
 	}
 
 	private boolean isSame(Event aOldEvent, Event aNewEvent) {
+		if (isSameId(aOldEvent, aNewEvent)) {
+			return true;
+		}
 		String tempOldSummary = getRealSummary(aOldEvent);
 		String tempNewSummary = getRealSummary(aNewEvent);
-		if (tempOldSummary.equals(tempNewSummary)) {
+		if (tempOldSummary.equals(tempNewSummary) || tempOldSummary.trim().contains(tempNewSummary.trim())) {
 			EventDateTime tempOldStart = aOldEvent.getStart();
 			DateTime tempDT1 = tempOldStart.getDateTime();
 			EventDateTime tempNewStart = aNewEvent.getStart();
