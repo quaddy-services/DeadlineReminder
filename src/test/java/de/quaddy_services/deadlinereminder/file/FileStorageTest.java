@@ -193,12 +193,12 @@ public class FileStorageTest extends TestCase {
 		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
 		logDeadlines(tempDeadlines);
 		assertEquals(11, tempDeadlines.size());
-		assertEquals("*11:00 testDailyWithEnd", tempDeadlines.get(0).getTextWithoutRepeatingInfo());
+		assertEquals("*testDailyWithEnd", tempDeadlines.get(0).getTextWithoutRepeatingInfo());
 		Date tempWhen = tempDeadlines.get(0).getWhen();
 		Calendar tempWhenCal = Calendar.getInstance();
 		tempWhenCal.setTime(tempWhen);
 		assertEquals(11, tempWhenCal.get(Calendar.HOUR_OF_DAY));
-		assertEquals("*1d-" + tempTenDays + "  testDailyWithEnd", tempDeadlines.get(0).getInfo());
+		assertEquals("*1d-" + tempTenDays + " testDailyWithEnd", tempDeadlines.get(0).getInfo());
 	}
 
 	/**
