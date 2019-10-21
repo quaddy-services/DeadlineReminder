@@ -99,51 +99,56 @@ public class DeadlineGui extends JPanel {
 			tempContentPanel.add(new JLabel("No open deadlines in " + aModel.getSourceInfo()), tempGBC);
 		} else {
 			for (final Deadline tempDeadline : tempOpenDeadlines) {
-				String tempText = dateFormatWithDay.format(tempDeadline.getWhen()) + ": " + tempDeadline.getTextWithoutRepeatingInfo();
-				if (tempDeadline.getEndPoint() != null) {
-					tempText += " (-" + dateFormat.format(tempDeadline.getEndPoint()) + ")";
-				} else if (tempDeadline.getRepeating() != null) {
-					tempText += " (" + dateFormat.format(tempDeadline.getRepeating()) + ")";
-				}
-				JCheckBox tempCheckBox = new JCheckBox(tempText);
-				deadlineToCheckBoxMap.put(tempDeadline, tempCheckBox);
-				tempCheckBox.setFont(new Font("Monospaced", 0, 14));
-				if (tempDeadline.getWhen().before(tempToday)) {
-					tempCheckBox.setForeground(Color.RED);
-				} else if (tempDeadline.getWhen().before(tempOverTomorow)) {
-					tempCheckBox.setForeground(Color.RED.darker());
-				} else if (tempDeadline.getWhen().before(tempNextWeek)) {
-					tempCheckBox.setForeground(Color.BLUE);
-				} else if (tempDeadline.getWhen().before(tempOverNextWeek)) {
-					tempCheckBox.setForeground(Color.BLUE.darker());
-				} else if (tempDeadline.getRepeating() != null) {
-					tempCheckBox.setForeground(Color.GRAY);
-				}
-				tempGBC.gridy++;
-				tempContentPanel.add(tempCheckBox, tempGBC);
-				tempCheckBox.addItemListener(new ItemListener() {
-					@Override
-					public void itemStateChanged(ItemEvent aE) {
-						if (aE.getStateChange() == ItemEvent.SELECTED) {
-							tempDeadline.setDone(true);
-						} else {
-							tempDeadline.setDone(false);
-						}
-						LOGGER.info("Selection:" + tempDeadline);
-					}
-				});
-				tempCheckBox.addMouseListener(new MouseAdapter() {
-					@Override
-					public void mousePressed(MouseEvent aE) {
-						super.mousePressed(aE);
-						showPopUp(aE);
-					}
-				});
+				addDeadlineRow(tempContentPanel, tempGBC, tempToday, tempOverTomorow, tempNextWeek, tempOverNextWeek, tempDeadline);
 			}
 		}
 		invalidate();
 		doLayout();
 		repaint();
+	}
+
+	private void addDeadlineRow(JPanel tempContentPanel, GridBagConstraints tempGBC, Date tempToday, Date tempOverTomorow, Date tempNextWeek,
+			Date tempOverNextWeek, final Deadline tempDeadline) {
+		String tempText = dateFormatWithDay.format(tempDeadline.getWhen()) + ": " + tempDeadline.getTextWithoutRepeatingInfo();
+		if (tempDeadline.getEndPoint() != null) {
+			tempText += " (-" + dateFormat.format(tempDeadline.getEndPoint()) + ")";
+		} else if (tempDeadline.getRepeating() != null) {
+			tempText += " (" + dateFormat.format(tempDeadline.getRepeating()) + ")";
+		}
+		JCheckBox tempCheckBox = new JCheckBox(tempText);
+		deadlineToCheckBoxMap.put(tempDeadline, tempCheckBox);
+		tempCheckBox.setFont(new Font("Monospaced", 0, 14));
+		if (tempDeadline.getWhen().before(tempToday)) {
+			tempCheckBox.setForeground(Color.RED);
+		} else if (tempDeadline.getWhen().before(tempOverTomorow)) {
+			tempCheckBox.setForeground(Color.RED.darker());
+		} else if (tempDeadline.getWhen().before(tempNextWeek)) {
+			tempCheckBox.setForeground(Color.BLUE);
+		} else if (tempDeadline.getWhen().before(tempOverNextWeek)) {
+			tempCheckBox.setForeground(Color.BLUE.darker());
+		} else if (tempDeadline.getRepeating() != null) {
+			tempCheckBox.setForeground(Color.GRAY);
+		}
+		tempGBC.gridy++;
+		tempContentPanel.add(tempCheckBox, tempGBC);
+		tempCheckBox.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent aE) {
+				if (aE.getStateChange() == ItemEvent.SELECTED) {
+					tempDeadline.setDone(true);
+				} else {
+					tempDeadline.setDone(false);
+				}
+				LOGGER.info("Selection:" + tempDeadline);
+			}
+		});
+		tempCheckBox.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent aE) {
+				super.mousePressed(aE);
+				showPopUp(aE);
+			}
+		});
 	}
 
 	protected void showPopUp(MouseEvent aE) {
