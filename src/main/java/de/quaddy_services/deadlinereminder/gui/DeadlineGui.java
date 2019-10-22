@@ -113,12 +113,15 @@ public class DeadlineGui extends JPanel {
 			Date tempOverNextWeek, final Deadline tempDeadline) {
 		String tempText = dateFormatWithDay.format(tempDeadline.getWhen()) + ": ";
 		if (!tempDeadline.isWholeDayEvent()) {
-			tempText += timeFormat.format(tempDeadline.getWhen()) + " ";
+			tempText += timeFormat.format(tempDeadline.getWhen());
+			Date tempWhenEndTime = tempDeadline.getWhenEndTime();
+			if (tempWhenEndTime != null) {
+				tempText += "-" + timeFormat.format(tempWhenEndTime);
+			}
+			tempText += " ";
 		}
 		tempText += tempDeadline.getTextWithoutRepeatingInfo();
-		if (tempDeadline.getEndPoint() != null) {
-			tempText += " (-" + dateFormat.format(tempDeadline.getEndPoint()) + ")";
-		} else if (tempDeadline.getRepeating() != null) {
+		if (tempDeadline.getRepeating() != null) {
 			tempText += " (" + dateFormat.format(tempDeadline.getRepeating()) + ")";
 		}
 		JCheckBox tempCheckBox = new JCheckBox(tempText);

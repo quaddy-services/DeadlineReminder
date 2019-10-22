@@ -3,21 +3,31 @@ package de.quaddy_services.deadlinereminder;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.StringTokenizer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Deadline {
+	private static final Logger LOGGER = LoggerFactory.getLogger(Deadline.class);
+
 	public Deadline() {
 		super();
 	}
 
 	private Date when;
+	/**
+	 * Same date as {@link #when} but different time.
+	 */
+	private Date whenEndTime;
 	private String info;
 	private boolean done;
 	private Date repeating;
 	private String textWithoutRepeatingInfo;
-	private Date endPoint;
 	private String id;
 
 	public Date getWhen() {
@@ -50,7 +60,7 @@ public class Deadline {
 	@Override
 	public String toString() {
 		return "Deadline [when=" + when + ", info=" + info + ", done=" + done + ", repeating=" + repeating + ", textWithoutRepeatingInfo="
-				+ textWithoutRepeatingInfo + ", endPoint=" + endPoint + "]";
+				+ textWithoutRepeatingInfo + "]";
 	}
 
 	/* (non-Javadoc)
@@ -113,17 +123,6 @@ public class Deadline {
 		return textWithoutRepeatingInfo;
 	}
 
-	public void setEndPoint(Date aEndPoint) {
-		endPoint = aEndPoint;
-	}
-
-	/**
-	 * @return the endPoint
-	 */
-	public final Date getEndPoint() {
-		return endPoint;
-	}
-
 	/**
 	 * ID (e.g. GoogleId)
 	 * @return
@@ -160,7 +159,8 @@ public class Deadline {
 	public void extractTimeFromInfo() {
 		//		private Date addTime(Date aDate, String aInfo) {
 		String tempInfo = getInfo();
-		StringTokenizer tempTokens = new StringTokenizer(tempInfo, "* ");
+		StringTokenizer tempTokens = new StringTokenizer(tempInfo, "* -");
+		List<String> tempTimeTokens = new ArrayList<>();
 		while (tempTokens.hasMoreTokens()) {
 			String tempToken = tempTokens.nextToken();
 			if (tempToken.length() > 3 && Character.isDigit(tempToken.charAt(0))) {
@@ -168,6 +168,8 @@ public class Deadline {
 					Date tempTime;
 					tempTime = timeFormat.parse(tempToken);
 					// found a valid time
+
+					tempTimeTokens.add(tempToken);
 
 					Date tempDateWithoutTime = getWhen();
 					Calendar tempCal = Calendar.getInstance();
@@ -179,23 +181,91 @@ public class Deadline {
 					Date tempDateWithTime = tempCal.getTime();
 					setWhen(tempDateWithTime);
 
-					int tempPos = tempInfo.indexOf(tempToken);
-					String tempNewInfo = tempInfo.substring(0, tempPos) + tempInfo.substring(tempPos + tempToken.length()).trim();
-					setInfo(tempNewInfo.trim());
+					if (tempTokens.hasMoreTokens()) {
+						// Maybe end-time?
+						tempToken = tempTokens.nextToken();
+						try {
+							tempTime = timeFormat.parse(tempToken);
 
-					String tempTextWithoutRepeatingInfo = textWithoutRepeatingInfo;
-					if (tempTextWithoutRepeatingInfo != null) {
-						int tempPos2 = tempTextWithoutRepeatingInfo.indexOf(tempToken);
-						String tempNewTextWithoutRepeatingInfo = tempTextWithoutRepeatingInfo.substring(0, tempPos2)
-								+ tempTextWithoutRepeatingInfo.substring(tempPos2 + tempToken.length()).trim();
-						setTextWithoutRepeatingInfo(tempNewTextWithoutRepeatingInfo);
+							// found a valid end time
+							tempTimeTokens.add(tempToken);
+
+							tempCal = Calendar.getInstance();
+							tempCal.setTime(tempDateWithoutTime);
+							tempTimeCal = Calendar.getInstance();
+							tempTimeCal.setTime(tempTime);
+							tempCal.add(Calendar.HOUR_OF_DAY, tempTimeCal.get(Calendar.HOUR_OF_DAY));
+							tempCal.add(Calendar.MINUTE, tempTimeCal.get(Calendar.MINUTE));
+							Date tempDateWithEndTime = tempCal.getTime();
+							setWhenEndTime(tempDateWithEndTime);
+
+						} catch (ParseException e) {
+							// ignore
+						} catch (RuntimeException e) {
+							LOGGER.error("Ok?", e);
+						}
+
 					}
+
+					removeTimeTokens(tempTimeTokens);
 					return;
 				} catch (ParseException e) {
 					// ignore
+				} catch (RuntimeException e) {
+					LOGGER.error("Ok?", e);
 				}
 			}
 		}
 
+	}
+
+	private void removeTimeTokens(List<String> aTokens) {
+		for (String tempToken : aTokens) {
+			String tempInfo = getInfo();
+			int tempPos = tempInfo.indexOf(tempToken);
+			if (tempPos >= 0) {
+				String tempStringUpToPos = tempInfo.substring(0, tempPos);
+				if (tempStringUpToPos.endsWith("-")) {
+					tempStringUpToPos = tempStringUpToPos.substring(0, tempStringUpToPos.length() - 1);
+				} else if (tempStringUpToPos.endsWith("- ")) {
+					tempStringUpToPos = tempStringUpToPos.substring(0, tempStringUpToPos.length() - 2);
+				}
+				String tempNewInfo = tempStringUpToPos + tempInfo.substring(tempPos + tempToken.length()).trim();
+				tempNewInfo = tempNewInfo.trim();
+				setInfo(tempNewInfo);
+
+			}
+		}
+		for (String tempToken : aTokens) {
+			String tempTextWithoutRepeatingInfo = textWithoutRepeatingInfo;
+			if (tempTextWithoutRepeatingInfo != null) {
+				int tempPos2 = tempTextWithoutRepeatingInfo.indexOf(tempToken);
+				if (tempPos2 >= 0) {
+					String tempStringUpToPos = tempTextWithoutRepeatingInfo.substring(0, tempPos2);
+					if (tempStringUpToPos.endsWith("-")) {
+						tempStringUpToPos = tempStringUpToPos.substring(0, tempStringUpToPos.length() - 1);
+					} else if (tempStringUpToPos.endsWith("- ")) {
+						tempStringUpToPos = tempStringUpToPos.substring(0, tempStringUpToPos.length() - 2);
+					}
+					String tempNewTextWithoutRepeatingInfo = tempStringUpToPos + tempTextWithoutRepeatingInfo.substring(tempPos2 + tempToken.length()).trim();
+					tempNewTextWithoutRepeatingInfo = tempNewTextWithoutRepeatingInfo.trim();
+					setTextWithoutRepeatingInfo(tempNewTextWithoutRepeatingInfo);
+				}
+			}
+		}
+	}
+
+	/**
+	 * @return the whenEndTime
+	 */
+	public final Date getWhenEndTime() {
+		return whenEndTime;
+	}
+
+	/**
+	 * @param aWhenEndTime the whenEndTime to set
+	 */
+	public final void setWhenEndTime(Date aWhenEndTime) {
+		whenEndTime = aWhenEndTime;
 	}
 }

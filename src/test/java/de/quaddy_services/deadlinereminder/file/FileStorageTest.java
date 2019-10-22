@@ -161,46 +161,6 @@ public class FileStorageTest extends TestCase {
 		assertEquals("*11d testDaily", tempDeadlines.get(0).getInfo());
 	}
 
-	public void testDailyWithEnd() {
-		Calendar tempCal = Calendar.getInstance();
-		String tempToDay = format(tempCal);
-		tempCal.add(Calendar.DAY_OF_YEAR, 10);
-		String tempTenDays = format(tempCal);
-		String tempText = tempToDay + "*1d" + "-" + tempTenDays + " testDailyWithEnd";
-		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
-		Calendar tempTo = Calendar.getInstance();
-		tempTo.add(Calendar.DAY_OF_YEAR, 40);
-		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		logDeadlines(tempDeadlines);
-		assertEquals(11, tempDeadlines.size());
-		assertEquals("*testDailyWithEnd", tempDeadlines.get(0).getTextWithoutRepeatingInfo());
-		assertEquals("*1d-" + tempTenDays + " testDailyWithEnd", tempDeadlines.get(0).getInfo());
-		Date tempWhen = tempDeadlines.get(0).getWhen();
-		Calendar tempWhenCal = Calendar.getInstance();
-		tempWhenCal.setTime(tempWhen);
-		assertEquals(0, tempWhenCal.get(Calendar.HOUR_OF_DAY));
-	}
-
-	public void testDailyWithTimeAndWithEnd() {
-		Calendar tempCal = Calendar.getInstance();
-		String tempToDay = format(tempCal);
-		tempCal.add(Calendar.DAY_OF_YEAR, 10);
-		String tempTenDays = format(tempCal);
-		String tempText = tempToDay + "*1d" + "-" + tempTenDays + " 11:00 testDailyWithEnd";
-		TestFileStorage tempTestFileStorage = new TestFileStorage(tempText);
-		Calendar tempTo = Calendar.getInstance();
-		tempTo.add(Calendar.DAY_OF_YEAR, 40);
-		List<Deadline> tempDeadlines = tempTestFileStorage.getOpenDeadlines(tempTo.getTime());
-		logDeadlines(tempDeadlines);
-		assertEquals(11, tempDeadlines.size());
-		assertEquals("*testDailyWithEnd", tempDeadlines.get(0).getTextWithoutRepeatingInfo());
-		Date tempWhen = tempDeadlines.get(0).getWhen();
-		Calendar tempWhenCal = Calendar.getInstance();
-		tempWhenCal.setTime(tempWhen);
-		assertEquals(11, tempWhenCal.get(Calendar.HOUR_OF_DAY));
-		assertEquals("*1d-" + tempTenDays + " testDailyWithEnd", tempDeadlines.get(0).getInfo());
-	}
-
 	/**
 	 *
 	 */
