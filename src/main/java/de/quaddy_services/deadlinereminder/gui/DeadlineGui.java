@@ -143,13 +143,14 @@ public class DeadlineGui extends JPanel {
 		tempOneLine.setLayout(new GridBagLayout());
 		GridBagConstraints tempOneLineGBC = new GridBagConstraints();
 		tempOneLineGBC.gridx = 0;
-		tempOneLineGBC.weightx = 1.0;
+		tempOneLineGBC.weightx = 0.1;
 		tempOneLineGBC.fill = GridBagConstraints.BOTH;
 		tempOneLine.add(tempCheckBox, tempOneLineGBC);
 		if (tempDeadline.getId() != null) {
 			tempOneLineGBC.gridx++;
-			tempOneLineGBC.weightx = 0.1;
-			tempOneLineGBC.anchor = GridBagConstraints.EAST;
+			tempOneLineGBC.weightx = 1.0;
+			tempOneLineGBC.insets = new Insets(0, 12, 0, 12);
+			tempOneLineGBC.anchor = GridBagConstraints.WEST;
 			JLabel tempComp = new JLabel("(added via GoogleCalendar)");
 			tempComp.setFont(new Font(Font.SERIF, 0, 9));
 			tempOneLine.add(tempComp, tempOneLineGBC);
