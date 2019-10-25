@@ -354,7 +354,18 @@ public class FileStorage implements Storage {
 				try (PrintWriter tempDone = new PrintWriter(createFileWriter(new File(getDirectory() + "/" + TERMIN_DONE_TXT)))) {
 					tempDone.println(INFO_PREFIX + new Date());
 					for (Deadline tempDeadline : tempDones) {
-						String tempLine = dateFormat.format(tempDeadline.getWhen()) + tempDeadline.getInfo();
+						StringBuilder tempDeadlineText = new StringBuilder();
+						tempDeadlineText.append(dateFormat.format(tempDeadline.getWhen()));
+						if (tempDeadline.isWholeDayEvent()) {
+							// Wholeday event
+						} else {
+							tempDeadlineText.append(" ");
+							Date tempWhen = tempDeadline.getWhen();
+							tempDeadlineText.append(timeFormat.format(tempWhen));
+						}
+						tempDeadlineText.append(" ");
+						tempDeadlineText.append(tempDeadline.getInfo());
+						String tempLine = tempDeadlineText.toString();
 						tempDone.println(tempLine);
 						LOGGER.info(new Date() + ": Confirmed: '" + tempLine + "'");
 					}
@@ -366,11 +377,11 @@ public class FileStorage implements Storage {
 	}
 
 	@Override
-	public void addFromGroogle(List<Deadline> aDeadline) throws IOException {
+	public void addFromGroogle(List<Deadline> aDeadlines) throws IOException {
 		synchronized (MONITOR) {
 			File tempFile = new File(getDirectory().getAbsolutePath() + "/" + TERMIN_GOOGLE_ADDED_TXT);
 			try (BufferedWriter tempFileWriter = createFileWriter(tempFile)) {
-				for (Deadline tempDeadline : aDeadline) {
+				for (Deadline tempDeadline : aDeadlines) {
 					StringBuilder tempDeadlineText = new StringBuilder();
 					if (tempDeadline.getId() != null) {
 						tempDeadlineText.append(ID_PREFIX);
@@ -378,11 +389,9 @@ public class FileStorage implements Storage {
 						tempDeadlineText.append("\t");
 					}
 					Date tempWhen = tempDeadline.getWhen();
-					Calendar tempCalendar = Calendar.getInstance();
-					tempCalendar.setTime(tempWhen);
 
 					tempDeadlineText.append(dateFormat.format(tempWhen));
-					if (tempCalendar.get(Calendar.HOUR) == 0 && tempCalendar.get(Calendar.MINUTE) == 0) {
+					if (tempDeadline.isWholeDayEvent()) {
 						// Wholeday event
 					} else {
 						tempDeadlineText.append(" ");
