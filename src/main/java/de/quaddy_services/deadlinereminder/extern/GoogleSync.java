@@ -55,7 +55,6 @@ import de.quaddy_services.deadlinereminder.gui.DeadlineGui;
  *
  */
 public class GoogleSync {
-	private static final String REPEATING_MARKER = " (";
 	private static final String OVERDUE_MARKER = "! ";
 	private static final Logger LOGGER = LoggerFactory.getLogger(GoogleSync.class);
 	private static final boolean DEBUG = false;
@@ -327,34 +326,44 @@ public class GoogleSync {
 		logInfo("Already at Google to be deleted: " + tempCurrentGoogleEvents.size());
 		logInfo("To be added to Google (later): " + tempNewEvents.size());
 		for (Event tempEvent : tempNewEvents.keySet()) {
-			EventDateTime tempStart = tempEvent.getStart();
-			Insert tempConfig = config(client.events().insert(tempDeadlineCalendarId, tempEvent));
-			try {
-				Event tempResult = tempConfig.execute();
-				logInfo("Added " + tempStart + " " + tempEvent.getSummary() + " " + tempResult);
-			} catch (GoogleJsonResponseException e) {
-				logError("Error adding " + tempStart + " " + tempEvent.getSummary() + " " + tempEvent, e);
-				throw e;
-			}
+			googleInsertEvent(client, tempDeadlineCalendarId, tempEvent);
 			slowDown();
 		}
 		logInfo("Now delete: " + tempCurrentGoogleEvents.size());
 		for (Event tempEvent : tempCurrentGoogleEvents) {
-			String tempSummary = tempEvent.getSummary();
-			EventDateTime tempStart = tempEvent.getStart();
-
-			Delete tempDelete = client.events().delete(tempDeadlineCalendarId, tempEvent.getId());
-			try {
-				config(tempDelete).execute();
-				logInfo("Deleted " + tempStart + " " + tempSummary + " " + tempEvent);
-			} catch (GoogleJsonResponseException e) {
-				logError("Error deleting " + tempStart + " " + tempEvent.getSummary() + " " + tempEvent, e);
-				throw e;
-			}
+			googleDeleteEvent(client, tempDeadlineCalendarId, tempEvent);
 			slowDown();
 		}
 		setLastSyncStarted(new DateTime(tempStartMillis));
 		return true;
+	}
+
+	private void googleDeleteEvent(com.google.api.services.calendar.Calendar aClient, String aDeadlineCalendarId, Event anEvent)
+			throws IOException, GoogleJsonResponseException {
+		String tempSummary = anEvent.getSummary();
+		EventDateTime tempStart = anEvent.getStart();
+
+		Delete tempDelete = aClient.events().delete(aDeadlineCalendarId, anEvent.getId());
+		try {
+			config(tempDelete).execute();
+			logInfo("Deleted " + tempStart + " " + tempSummary + " " + anEvent);
+		} catch (GoogleJsonResponseException e) {
+			logError("Error deleting " + tempStart + " " + anEvent.getSummary() + " " + anEvent, e);
+			throw e;
+		}
+	}
+
+	private void googleInsertEvent(com.google.api.services.calendar.Calendar aClient, String aDeadlineCalendarId, Event anEvent)
+			throws IOException, GoogleJsonResponseException {
+		EventDateTime tempStart = anEvent.getStart();
+		Insert tempConfig = config(aClient.events().insert(aDeadlineCalendarId, anEvent));
+		try {
+			Event tempResult = tempConfig.execute();
+			logInfo("Added " + tempStart + " " + anEvent.getSummary() + " " + tempResult);
+		} catch (GoogleJsonResponseException e) {
+			logError("Error adding " + tempStart + " " + anEvent.getSummary() + " " + anEvent, e);
+			throw e;
+		}
 	}
 
 	private boolean isSameId(Event aEvent, Event aNewEvent) {
