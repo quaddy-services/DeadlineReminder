@@ -622,12 +622,9 @@ public class GoogleSync {
 		tempExtendedProperties.put("TextWithoutRepeatingInfo", tempText);
 		event.setSummary(tempText.trim());
 		if (tempIsWholeDayEvent) {
-			event.setStart(new EventDateTime().setDate(new DateTime(tempStartDateTime, timeZone)));
-			Calendar tempTomorrowCal = Calendar.getInstance();
-			tempTomorrowCal.setTime(tempStartDateTime);
-			tempTomorrowCal.add(Calendar.DAY_OF_YEAR, 1);
-			Date tempTomorrow = tempTomorrowCal.getTime();
-			event.setEnd(new EventDateTime().setDate(new DateTime(tempTomorrow, timeZone)));
+			String tempDateOnlyString = new java.sql.Date(tempStartDateTime.getTime()).toString();
+			event.setStart(new EventDateTime().setDate(new DateTime(tempDateOnlyString))); // force DateTime.dateOnly=true
+			event.setEnd(new EventDateTime().setDate(new DateTime(tempDateOnlyString)));
 			// event.setEnd(null); //  "message" : "Missing end time.",
 		} else {
 			DateTime start = new DateTime(tempStartDateTime, timeZone);
