@@ -8,11 +8,13 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.TimeZone;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Deadline {
+	private static final TimeZone TIME_ZONE = TimeZone.getDefault();
 	private static final Logger LOGGER = LoggerFactory.getLogger(Deadline.class);
 
 	public Deadline() {
@@ -179,6 +181,10 @@ public class Deadline {
 					tempCal.add(Calendar.HOUR_OF_DAY, tempTimeCal.get(Calendar.HOUR_OF_DAY));
 					tempCal.add(Calendar.MINUTE, tempTimeCal.get(Calendar.MINUTE));
 					Date tempDateWithTime = tempCal.getTime();
+					// Correct daylight savings
+					int tempAmountTimeOffset = TIME_ZONE.getOffset(tempDateWithoutTime.getTime()) - TIME_ZONE.getOffset(tempDateWithTime.getTime());
+					tempCal.add(Calendar.MILLISECOND, tempAmountTimeOffset);
+					tempDateWithTime = tempCal.getTime();
 					setWhen(tempDateWithTime);
 
 					if (tempTokens.hasMoreTokens()) {
