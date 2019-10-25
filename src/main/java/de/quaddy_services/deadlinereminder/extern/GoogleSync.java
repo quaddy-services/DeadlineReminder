@@ -65,9 +65,12 @@ public class GoogleSync {
 
 	private Thread t = null;
 	private LogListener logListener = null;
+	private TimeZone timeZone;
 
 	public GoogleSync() {
 		super();
+		timeZone = TimeZone.getDefault();
+		LOGGER.info("Use timeZone=" + timeZone);
 	}
 
 	public void pushToGoogle(final List<Deadline> aOpenDeadlines, final DoneSelectionListener aDoneSelectionListener) {
@@ -592,20 +595,12 @@ public class GoogleSync {
 	 * opposite of {@link #createDeadlineFromGoogleEvent(Event)}
 	 */
 	private Event createGoogleEventFromDeadline(Deadline aDeadline) {
-		Calendar tempCal = Calendar.getInstance();
-		tempCal.set(Calendar.HOUR_OF_DAY, 0);
-		tempCal.set(Calendar.MINUTE, 0);
-		tempCal.set(Calendar.SECOND, 0);
-		tempCal.set(Calendar.MILLISECOND, 0);
-		Date tempToday = tempCal.getTime();
-		tempCal.set(Calendar.HOUR_OF_DAY, 0);
-		Date tempTodayMorning = tempCal.getTime();
+		Date tempTodayMorning = midnight(new Date());
 		Event event = new Event();
 		String tempId = aDeadline.getId();
 		if (tempId != null) {
 			event.setId(tempId);
 		}
-		Date startDate;
 		ExtendedProperties tempExtendedProperties = event.getExtendedProperties();
 		if (tempExtendedProperties == null) {
 			tempExtendedProperties = new ExtendedProperties();
@@ -613,31 +608,39 @@ public class GoogleSync {
 		}
 		String tempTextWithoutRepeatingInfo = aDeadline.getTextWithoutRepeatingInfo();
 		String tempText;
-		if (aDeadline.getWhen().before(tempToday)) {
+		Date tempStartDateTime;
+		boolean tempIsWholeDayEvent;
+		if (aDeadline.getWhen().before(tempTodayMorning)) {
 			tempText = OVERDUE_MARKER + tempTextWithoutRepeatingInfo + " !" + DATE_FORMAT.format(aDeadline.getWhen()) + "!";
-			startDate = tempTodayMorning;
+			tempStartDateTime = tempTodayMorning;
+			tempIsWholeDayEvent = true; // avoid 400 Bad Request "The specified time range is empty." #5
 		} else {
 			tempText = tempTextWithoutRepeatingInfo;
-			startDate = aDeadline.getWhen();
+			tempStartDateTime = aDeadline.getWhen();
+			tempIsWholeDayEvent = aDeadline.isWholeDayEvent();
 		}
 		tempExtendedProperties.put("TextWithoutRepeatingInfo", tempText);
 		event.setSummary(tempText.trim());
-		boolean tempIsWholeDayEvent = aDeadline.isWholeDayEvent();
 		if (tempIsWholeDayEvent) {
-			event.setStart(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime()).toString())));
-			event.setEnd(new EventDateTime().setDate(new DateTime(new java.sql.Date(startDate.getTime() + 24 * 3600000).toString())));
+			event.setStart(new EventDateTime().setDate(new DateTime(tempStartDateTime, timeZone)));
+			Calendar tempTomorrowCal = Calendar.getInstance();
+			tempTomorrowCal.setTime(tempStartDateTime);
+			tempTomorrowCal.add(Calendar.DAY_OF_YEAR, 1);
+			Date tempTomorrow = tempTomorrowCal.getTime();
+			event.setEnd(new EventDateTime().setDate(new DateTime(tempTomorrow, timeZone)));
 			// event.setEnd(null); //  "message" : "Missing end time.",
 		} else {
-			DateTime start = new DateTime(startDate, TimeZone.getDefault());
+			DateTime start = new DateTime(tempStartDateTime, timeZone);
 			event.setStart(new EventDateTime().setDateTime(start));
 
-			Date tempWhenEndTime = aDeadline.getWhenEndTime();
-			if (tempWhenEndTime == null) {
+			Date tempWhenEndDateTime;
+			tempWhenEndDateTime = aDeadline.getWhenEndTime();
+			if (tempWhenEndDateTime == null) {
 				//event.setEnd(null); //  "message" : "Missing end time.",
-				tempWhenEndTime = aDeadline.getWhen();
+				tempWhenEndDateTime = aDeadline.getWhen();
 			}
-			Date endDate = new Date(tempWhenEndTime.getTime());
-			DateTime end = new DateTime(endDate, TimeZone.getDefault());
+			Date endDate = new Date(tempWhenEndDateTime.getTime());
+			DateTime end = new DateTime(endDate, timeZone);
 			event.setEnd(new EventDateTime().setDateTime(end));
 		}
 		String tempDescription = "";
@@ -647,6 +650,16 @@ public class GoogleSync {
 		}
 		event.setDescription(tempDescription);
 		return event;
+	}
+
+	private Date midnight(Date aDate) {
+		Calendar tempCal = Calendar.getInstance();
+		tempCal.setTime(aDate);
+		tempCal.set(Calendar.HOUR_OF_DAY, 0);
+		tempCal.set(Calendar.MINUTE, 0);
+		tempCal.set(Calendar.SECOND, 0);
+		tempCal.set(Calendar.MILLISECOND, 0);
+		return tempCal.getTime();
 	}
 
 	/**
@@ -680,13 +693,7 @@ public class GoogleSync {
 			}
 		} else {
 			// Whole day
-			Calendar tempCal = Calendar.getInstance();
-			tempCal.setTimeInMillis(tempStart.getDate().getValue());
-			tempCal.set(Calendar.HOUR, 0);
-			tempCal.set(Calendar.MINUTE, 0);
-			tempCal.set(Calendar.SECOND, 0);
-			tempCal.set(Calendar.MILLISECOND, 0);
-			tempWhen = tempCal.getTime();
+			tempWhen = midnight(new Date(tempStart.getDate().getValue()));
 		}
 		tempDeadline.setWhen(tempWhen);
 		tempDeadline.setId(anEvent.getId());
