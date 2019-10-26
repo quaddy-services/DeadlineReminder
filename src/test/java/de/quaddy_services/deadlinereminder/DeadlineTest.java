@@ -235,4 +235,32 @@ public class DeadlineTest extends TestCase {
 		assertEquals(59, tempTestCal.get(Calendar.MINUTE));
 	}
 
+	public void testExtractTimeWithoutTime() {
+		TimeZone tempTestTimeZone = TimeZone.getTimeZone("GMT");
+		Deadline tempDeadline = createTestDeadline(tempTestTimeZone);
+		tempDeadline.setWhen(getZeroOClock(tempTestTimeZone));
+		tempDeadline.setInfo("testExtractTimeWithoutTime");
+		tempDeadline.extractTimeFromInfo();
+		Date tempWhen = tempDeadline.getWhen();
+		Calendar tempTestCal = Calendar.getInstance();
+		tempTestCal.setTimeZone(tempTestTimeZone);
+		tempTestCal.setTime(tempWhen);
+		assertEquals(0, tempTestCal.get(Calendar.HOUR_OF_DAY));
+		assertEquals(0, tempTestCal.get(Calendar.MINUTE));
+	}
+
+	public void testExtractTimeFromInfoIgnoresComment() {
+		TimeZone tempTestTimeZone = TimeZone.getTimeZone("GMT");
+		Deadline tempDeadline = createTestDeadline(tempTestTimeZone);
+		tempDeadline.setWhen(getZeroOClock(tempTestTimeZone));
+		tempDeadline.setInfo("testExtractTimeFromInfoIgnoresComment will end on 14:22 or earlier");
+		tempDeadline.extractTimeFromInfo();
+		Date tempWhen = tempDeadline.getWhen();
+		Calendar tempTestCal = Calendar.getInstance();
+		tempTestCal.setTimeZone(tempTestTimeZone);
+		tempTestCal.setTime(tempWhen);
+		assertEquals(0, tempTestCal.get(Calendar.HOUR_OF_DAY));
+		assertEquals(0, tempTestCal.get(Calendar.MINUTE));
+	}
+
 }
