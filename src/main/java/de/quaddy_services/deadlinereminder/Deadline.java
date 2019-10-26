@@ -82,23 +82,30 @@ public class Deadline {
 	 */
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (getClass() != obj.getClass()) {
 			return false;
+		}
 		Deadline other = (Deadline) obj;
 		if (info == null) {
-			if (other.info != null)
+			if (other.info != null) {
 				return false;
-		} else if (!info.trim().equals(other.info.trim()))
+			}
+		} else if (!info.trim().equals(other.info.trim())) {
 			return false;
+		}
 		if (when == null) {
-			if (other.when != null)
+			if (other.when != null) {
 				return false;
-		} else if (!when.equals(other.when))
+			}
+		} else if (!when.equals(other.when)) {
 			return false;
+		}
 		return true;
 	}
 
@@ -160,10 +167,11 @@ public class Deadline {
 	 */
 	public void extractTimeFromInfo() {
 		//		private Date addTime(Date aDate, String aInfo) {
-		String tempInfo = getInfo();
+		String tempInfo = getTextWithoutRepeatingInfo();
 		StringTokenizer tempTokens = new StringTokenizer(tempInfo, "* -");
 		List<String> tempTimeTokens = new ArrayList<>();
-		while (tempTokens.hasMoreTokens()) {
+		// consider first token only.
+		if (tempTokens.hasMoreTokens()) {
 			String tempToken = tempTokens.nextToken();
 			if (tempToken.length() > 3 && Character.isDigit(tempToken.charAt(0))) {
 				try {
