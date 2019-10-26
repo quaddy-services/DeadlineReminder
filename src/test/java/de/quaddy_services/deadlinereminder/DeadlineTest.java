@@ -128,7 +128,12 @@ public class DeadlineTest extends TestCase {
 	}
 
 	private Date getZeroOClock() {
+		return getZeroOClock(TimeZone.getDefault());
+	}
+
+	private Date getZeroOClock(TimeZone aTimeZone) {
 		Calendar tempCal = Calendar.getInstance();
+		tempCal.setTimeZone(aTimeZone);
 		tempCal.set(Calendar.HOUR_OF_DAY, 0);
 		tempCal.set(Calendar.MINUTE, 0);
 		tempCal.set(Calendar.SECOND, 0);
@@ -194,6 +199,40 @@ public class DeadlineTest extends TestCase {
 		tempTestCal.setTimeZone(tempTestTimeZone);
 		tempTestCal.setTime(tempWhen);
 		assertEquals(13, tempTestCal.get(Calendar.HOUR_OF_DAY));
+	}
+
+	public void testExtractTimeFromInfo() {
+		TimeZone tempTestTimeZone = TimeZone.getTimeZone("GMT");
+		Deadline tempDeadline = createTestDeadline(tempTestTimeZone);
+		tempDeadline.setWhen(getZeroOClock(tempTestTimeZone));
+		tempDeadline.setInfo("15:23 testExtractTimeFromInfo");
+		tempDeadline.extractTimeFromInfo();
+		Date tempWhen = tempDeadline.getWhen();
+		Calendar tempTestCal = Calendar.getInstance();
+		tempTestCal.setTimeZone(tempTestTimeZone);
+		tempTestCal.setTime(tempWhen);
+		assertEquals(15, tempTestCal.get(Calendar.HOUR_OF_DAY));
+		assertEquals(23, tempTestCal.get(Calendar.MINUTE));
+	}
+
+	public void testExtractTimeFromInfoWithEnd() {
+		TimeZone tempTestTimeZone = TimeZone.getTimeZone("GMT");
+		Deadline tempDeadline = createTestDeadline(tempTestTimeZone);
+		tempDeadline.setWhen(getZeroOClock(tempTestTimeZone));
+		tempDeadline.setInfo("15:23-17:59 testExtractTimeFromInfoWithEnd");
+		tempDeadline.extractTimeFromInfo();
+		Date tempWhen = tempDeadline.getWhen();
+		Calendar tempTestCal = Calendar.getInstance();
+		tempTestCal.setTimeZone(tempTestTimeZone);
+		tempTestCal.setTime(tempWhen);
+		assertEquals(15, tempTestCal.get(Calendar.HOUR_OF_DAY));
+		assertEquals(23, tempTestCal.get(Calendar.MINUTE));
+
+		Date tempWhenEndTime = tempDeadline.getWhenEndTime();
+		assertNotNull("WhenEndTime", tempWhenEndTime);
+		tempTestCal.setTime(tempWhenEndTime);
+		assertEquals(17, tempTestCal.get(Calendar.HOUR_OF_DAY));
+		assertEquals(59, tempTestCal.get(Calendar.MINUTE));
 	}
 
 }
