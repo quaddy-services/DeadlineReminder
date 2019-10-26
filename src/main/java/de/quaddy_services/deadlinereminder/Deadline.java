@@ -82,23 +82,30 @@ public class Deadline {
 	 */
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (getClass() != obj.getClass()) {
 			return false;
+		}
 		Deadline other = (Deadline) obj;
 		if (info == null) {
-			if (other.info != null)
+			if (other.info != null) {
 				return false;
-		} else if (!info.trim().equals(other.info.trim()))
+			}
+		} else if (!info.trim().equals(other.info.trim())) {
 			return false;
+		}
 		if (when == null) {
-			if (other.when != null)
+			if (other.when != null) {
 				return false;
-		} else if (!when.equals(other.when))
+			}
+		} else if (!when.equals(other.when)) {
 			return false;
+		}
 		return true;
 	}
 
@@ -182,7 +189,7 @@ public class Deadline {
 					tempCal.add(Calendar.MINUTE, tempTimeCal.get(Calendar.MINUTE));
 					Date tempDateWithTime = tempCal.getTime();
 					// Correct daylight savings
-					int tempAmountTimeOffset = TIME_ZONE.getOffset(tempDateWithoutTime.getTime()) - TIME_ZONE.getOffset(tempDateWithTime.getTime());
+					int tempAmountTimeOffset = getZoneOffset(tempDateWithoutTime.getTime()) - getZoneOffset(tempDateWithTime.getTime());
 					tempCal.add(Calendar.MILLISECOND, tempAmountTimeOffset);
 					tempDateWithTime = tempCal.getTime();
 					setWhen(tempDateWithTime);
@@ -223,6 +230,13 @@ public class Deadline {
 			}
 		}
 
+	}
+
+	/**
+	 *
+	 */
+	int getZoneOffset(long aTime) {
+		return TIME_ZONE.getOffset(aTime);
 	}
 
 	private void removeTimeTokens(List<String> aTokens) {
