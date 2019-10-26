@@ -190,7 +190,7 @@ public class Deadline {
 					tempCal.add(Calendar.MINUTE, tempTimeCal.get(Calendar.MINUTE));
 					Date tempDateWithTime = tempCal.getTime();
 					// Correct daylight savings
-					int tempAmountTimeOffset = TIME_ZONE.getOffset(tempDateWithoutTime.getTime()) - TIME_ZONE.getOffset(tempDateWithTime.getTime());
+					int tempAmountTimeOffset = getZoneOffset(tempDateWithoutTime.getTime()) - getZoneOffset(tempDateWithTime.getTime());
 					tempCal.add(Calendar.MILLISECOND, tempAmountTimeOffset);
 					tempDateWithTime = tempCal.getTime();
 					setWhen(tempDateWithTime);
@@ -231,6 +231,13 @@ public class Deadline {
 			}
 		}
 
+	}
+
+	/**
+	 *
+	 */
+	int getZoneOffset(long aTime) {
+		return TIME_ZONE.getOffset(aTime);
 	}
 
 	private void removeTimeTokens(List<String> aTokens) {
