@@ -167,10 +167,11 @@ public class Deadline {
 	 */
 	public void extractTimeFromInfo() {
 		//		private Date addTime(Date aDate, String aInfo) {
-		String tempInfo = getInfo();
+		String tempInfo = getTextWithoutRepeatingInfo();
 		StringTokenizer tempTokens = new StringTokenizer(tempInfo, "* -");
 		List<String> tempTimeTokens = new ArrayList<>();
-		while (tempTokens.hasMoreTokens()) {
+		// consider first token only.
+		if (tempTokens.hasMoreTokens()) {
 			String tempToken = tempTokens.nextToken();
 			if (tempToken.length() > 3 && Character.isDigit(tempToken.charAt(0))) {
 				try {
