@@ -1,5 +1,7 @@
 package de.quaddy_services.deadlinereminder.extern;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
@@ -459,6 +461,12 @@ public class GoogleSync {
 	 */
 	private static synchronized void setLastSyncStarted(DateTime aDateTime) {
 		lastSyncStarted = aDateTime;
+		File tempLastSyncFile = new FileStorage().getLastSyncFile();
+		try (FileOutputStream tempOut = new FileOutputStream(tempLastSyncFile)) {
+			tempOut.write(new Date().toString().getBytes());
+		} catch (IOException e) {
+			LOGGER.error("Ignore " + tempLastSyncFile.getAbsolutePath(), e);
+		}
 	}
 
 	/**
@@ -466,11 +474,36 @@ public class GoogleSync {
 	 */
 	private static synchronized DateTime getLastSyncStarted() {
 		if (lastSyncStarted == null) {
+			Long tempLastFileDate = null;
 			Long tempFileDate = FileStorage.getFileDate(FileStorage.TERMIN_GOOGLE_ADDED_TXT);
 			if (tempFileDate != null) {
+				tempLastFileDate = tempFileDate;
+			}
+			tempFileDate = FileStorage.getFileDate(FileStorage.TERMIN_DONE_TXT);
+			if (tempFileDate != null) {
+				if (tempLastFileDate == null) {
+					tempLastFileDate = tempFileDate;
+				} else {
+					tempLastFileDate = Math.max(tempLastFileDate, tempFileDate);
+				}
+			}
+			File tempFile = new FileStorage().getLastSyncFile();
+			if (tempFile.exists()) {
+				tempFileDate = tempFile.lastModified();
+				if (tempFileDate != null) {
+					if (tempLastFileDate == null) {
+						tempLastFileDate = tempFileDate;
+					} else {
+						tempLastFileDate = Math.max(tempLastFileDate, tempFileDate);
+					}
+				}
+			}
+			if (tempLastFileDate != null) {
 				lastSyncStarted = new DateTime(new Date(tempFileDate));
+				LOGGER.info("Found via file: lastSyncStarted=" + lastSyncStarted);
 			}
 		}
+		LOGGER.info("lastSyncStarted=" + lastSyncStarted);
 		return lastSyncStarted;
 	}
 

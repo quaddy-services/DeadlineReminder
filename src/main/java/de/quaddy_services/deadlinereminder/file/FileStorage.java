@@ -39,6 +39,8 @@ public class FileStorage implements Storage {
 
 	private static final Object MONITOR = new Object();
 
+	public static final String TERMIN_LAST_SYNC_TXT = "termin-last-sync.txt";
+
 	private static Map<String, Long> fileDates = new HashMap<>();
 
 	public FileStorage() {
@@ -74,11 +76,16 @@ public class FileStorage implements Storage {
 				tempFound.addAll(tempDeadlinesFromTerminTxt);
 
 				tempFound.removeAll(tempDoneDeadlines);
+
 				return tempFound;
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		}
+	}
+
+	public File getLastSyncFile() {
+		return new File(getDirectory().getAbsolutePath() + "/" + TERMIN_LAST_SYNC_TXT);
 	}
 
 	private List<Deadline> readDeadlines(Date to, String tempFileName) throws FileNotFoundException, IOException {
