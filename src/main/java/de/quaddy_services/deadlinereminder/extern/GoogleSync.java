@@ -62,7 +62,7 @@ public class GoogleSync {
 	private static final boolean DEBUG = false;
 
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yy");
-	private static DateTime lastSyncStarted;
+	private static DateTime lastSyncStarted = null;
 	private static int syncErrorCount = 0;
 
 	private Thread t = null;
@@ -467,6 +467,7 @@ public class GoogleSync {
 		} catch (IOException e) {
 			LOGGER.error("Ignore " + tempLastSyncFile.getAbsolutePath(), e);
 		}
+		LOGGER.info("setLastSyncStarted=" + lastSyncStarted);
 	}
 
 	/**
@@ -503,7 +504,6 @@ public class GoogleSync {
 				LOGGER.info("Found via file: lastSyncStarted=" + lastSyncStarted);
 			}
 		}
-		LOGGER.info("lastSyncStarted=" + lastSyncStarted);
 		return lastSyncStarted;
 	}
 
