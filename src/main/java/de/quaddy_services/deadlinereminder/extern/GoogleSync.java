@@ -500,7 +500,7 @@ public class GoogleSync {
 				}
 			}
 			if (tempLastFileDate != null) {
-				lastSyncStarted = new DateTime(new Date(tempFileDate));
+				lastSyncStarted = new DateTime(new Date(tempLastFileDate));
 				LOGGER.info("Found via file: lastSyncStarted=" + lastSyncStarted);
 			}
 		}
