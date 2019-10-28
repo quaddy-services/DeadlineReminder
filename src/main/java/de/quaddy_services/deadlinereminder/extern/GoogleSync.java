@@ -624,6 +624,12 @@ public class GoogleSync {
 		if (tempIsWholeDayEvent) {
 			String tempDateOnlyString = new java.sql.Date(tempStartDateTime.getTime()).toString();
 			event.setStart(new EventDateTime().setDate(new DateTime(tempDateOnlyString))); // force DateTime.dateOnly=true
+			Calendar tempEndDateTimeCal = Calendar.getInstance();
+			tempEndDateTimeCal.setTime(tempStartDateTime);
+			tempEndDateTimeCal.setTimeZone(timeZone);
+			tempEndDateTimeCal.add(Calendar.DAY_OF_YEAR, 1);
+			tempEndDateTimeCal.add(Calendar.HOUR_OF_DAY, 2); // add 2 hours to ensure with DST it gives next date.
+			tempDateOnlyString = new java.sql.Date(tempEndDateTimeCal.getTimeInMillis()).toString();
 			event.setEnd(new EventDateTime().setDate(new DateTime(tempDateOnlyString)));
 			// event.setEnd(null); //  "message" : "Missing end time.",
 		} else {
