@@ -233,6 +233,18 @@ public class GoogleSync {
 		long tempNow = System.currentTimeMillis();
 		for (Iterator<Event> iCurrent = tempCurrentGoogleEvents.iterator(); iCurrent.hasNext();) {
 			Event tempGoogleEvent = iCurrent.next();
+			if ("transparent".equals(tempGoogleEvent.getTransparency())) {
+				Event tempSameEvent = getSameEvent(tempNewEvents.keySet(), tempGoogleEvent);
+				if (tempSameEvent != null) {
+					Deadline tempDeadline = tempNewEvents.get(tempSameEvent);
+					logInfo("Google calendar entry was marked available and so make it done. tempDeadline=" + tempDeadline);
+					tempDeadline.setDone(true);
+					aDoneSelectionListener.deadlineDone(tempDeadline);
+				}
+			}
+		}
+		for (Iterator<Event> iCurrent = tempCurrentGoogleEvents.iterator(); iCurrent.hasNext();) {
+			Event tempGoogleEvent = iCurrent.next();
 			EventDateTime tempStart = tempGoogleEvent.getStart();
 			DateTime tempDate = tempStart.getDate();
 			String tempSummary = tempGoogleEvent.getSummary();
@@ -284,21 +296,13 @@ public class GoogleSync {
 				Map.Entry<Event, Deadline> tempMapEntry = iNew.next();
 				Event tempNewEvent = tempMapEntry.getKey();
 				boolean tempSameId = isSameId(tempEvent, tempNewEvent);
-				if (tempSameId || isSame(tempEvent, tempNewEvent)) {
-					if (tempSameId) {
-						if (isUpdated(tempNewEvent, tempEvent)) {
-							Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
-							logInfo("Add the updated values to from-google file " + tempDeadline.getTextWithoutRepeatingInfo());
-							aDoneSelectionListener.addNewDeadline(tempDeadline);
-						}
-						// Nothing to do, just keep both entries
+				if (tempSameId) {
+					if (isUpdated(tempNewEvent, tempEvent)) {
+						Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
+						logInfo("Add the updated values to from-google file " + tempDeadline.getTextWithoutRepeatingInfo());
+						aDoneSelectionListener.addNewDeadline(tempDeadline);
 					}
-					if ("transparent".equals(tempEvent.getTransparency())) {
-						Deadline tempDeadline = tempMapEntry.getValue();
-						logInfo("Google calendar entry was marked available and so make it done. tempDeadline=" + tempDeadline);
-						tempDeadline.setDone(true);
-						aDoneSelectionListener.deadlineDone(tempDeadline);
-					}
+					// Nothing to do, just keep both entries
 					iCurrent.remove();
 					iNew.remove();
 					tempRemoved = true;
