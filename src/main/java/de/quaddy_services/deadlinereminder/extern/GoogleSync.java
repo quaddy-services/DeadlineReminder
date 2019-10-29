@@ -296,11 +296,13 @@ public class GoogleSync {
 				Map.Entry<Event, Deadline> tempMapEntry = iNew.next();
 				Event tempNewEvent = tempMapEntry.getKey();
 				boolean tempSameId = isSameId(tempEvent, tempNewEvent);
-				if (tempSameId) {
-					if (isUpdated(tempNewEvent, tempEvent)) {
-						Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
-						logInfo("Add the updated values to from-google file " + tempDeadline.getTextWithoutRepeatingInfo());
-						aDoneSelectionListener.addNewDeadline(tempDeadline);
+				if (tempSameId || isSame(tempEvent, tempNewEvent)) {
+					if (tempSameId) {
+						if (isUpdated(tempNewEvent, tempEvent)) {
+							Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
+							logInfo("Add the updated values to from-google file " + tempDeadline.getTextWithoutRepeatingInfo());
+							aDoneSelectionListener.addNewDeadline(tempDeadline);
+						}
 					}
 					// Nothing to do, just keep both entries
 					iCurrent.remove();
