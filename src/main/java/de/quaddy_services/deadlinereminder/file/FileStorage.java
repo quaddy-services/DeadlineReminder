@@ -41,14 +41,8 @@ public class FileStorage implements Storage {
 
 	public static final String TERMIN_LAST_SYNC_TXT = "termin-last-sync.txt";
 
-	private static Map<String, Long> fileDates = new HashMap<>();
-
 	public FileStorage() {
 		super();
-	}
-
-	public static Long getFileDate(String aLogicalName) {
-		return fileDates.get(aLogicalName);
 	}
 
 	private File getDirectory() {
@@ -120,7 +114,6 @@ public class FileStorage implements Storage {
 			tempFile.createNewFile();
 			return new BufferedReader(new StringReader(""));
 		}
-		fileDates.put(tempFile.getName(), tempFile.lastModified());
 		String tempEncoding = "UTF-8";
 		// https://dzone.com/articles/java-may-use-utf-8-as-its-default-charset
 		UnicodeReader tempIn = new UnicodeReader(new FileInputStream(tempFile), tempEncoding);
@@ -433,7 +426,6 @@ public class FileStorage implements Storage {
 			tempOut.write(new byte[] { (byte) 0xFF, (byte) 0xFE });
 		}
 		OutputStreamWriter tempOutputStreamWriter = new OutputStreamWriter(tempOut, "UTF-16LE");
-		fileDates.put(aFile.getName(), System.currentTimeMillis());
 		return new BufferedWriter(tempOutputStreamWriter);
 	}
 }

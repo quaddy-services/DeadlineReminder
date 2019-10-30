@@ -481,32 +481,10 @@ public class GoogleSync {
 	 */
 	private static synchronized DateTime getLastSyncStarted() {
 		if (lastSyncStarted == null) {
-			Long tempLastFileDate = null;
-			Long tempFileDate = FileStorage.getFileDate(FileStorage.TERMIN_GOOGLE_ADDED_TXT);
-			if (tempFileDate != null) {
-				tempLastFileDate = tempFileDate;
-			}
-			tempFileDate = FileStorage.getFileDate(FileStorage.TERMIN_DONE_TXT);
-			if (tempFileDate != null) {
-				if (tempLastFileDate == null) {
-					tempLastFileDate = tempFileDate;
-				} else {
-					tempLastFileDate = Math.max(tempLastFileDate, tempFileDate);
-				}
-			}
 			File tempFile = new FileStorage().getLastSyncFile();
 			if (tempFile.exists()) {
-				tempFileDate = tempFile.lastModified();
-				if (tempFileDate != null) {
-					if (tempLastFileDate == null) {
-						tempLastFileDate = tempFileDate;
-					} else {
-						tempLastFileDate = Math.max(tempLastFileDate, tempFileDate);
-					}
-				}
-			}
-			if (tempLastFileDate != null) {
-				lastSyncStarted = new DateTime(new Date(tempLastFileDate));
+				long tempFileDate = tempFile.lastModified();
+				lastSyncStarted = new DateTime(new Date(tempFileDate));
 				LOGGER.info("Found via file: lastSyncStarted=" + lastSyncStarted);
 			}
 		}
