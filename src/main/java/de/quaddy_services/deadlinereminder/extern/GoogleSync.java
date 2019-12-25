@@ -721,7 +721,7 @@ public class GoogleSync {
 	}
 
 	private String getSummary(Event anEvent) {
-		return anEvent.getSummary().replace('\r', ' ').replace('\n', ' ').trim();
+		return anEvent.getSummary().replace('\r', ' ').replace('\n', ' ').replace('\t', ' ').trim();
 	}
 
 	/**
