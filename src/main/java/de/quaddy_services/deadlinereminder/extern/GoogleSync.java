@@ -247,7 +247,7 @@ public class GoogleSync {
 			Event tempGoogleEvent = iCurrent.next();
 			EventDateTime tempStart = tempGoogleEvent.getStart();
 			DateTime tempDate = tempStart.getDate();
-			String tempSummary = tempGoogleEvent.getSummary();
+			String tempSummary = getSummary(tempGoogleEvent);
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Overdue events are deleted and recreated next day. The original event is
 				// already kept in calendar.
@@ -315,7 +315,7 @@ public class GoogleSync {
 				continue;
 			}
 			EventDateTime tempStart = tempEvent.getStart();
-			String tempSummary = tempEvent.getSummary();
+			String tempSummary = getSummary(tempEvent);
 			DateTime tempLastSyncStarted = getLastSyncStarted();
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Do not add self generated files 
@@ -351,7 +351,7 @@ public class GoogleSync {
 
 	private void googleDeleteEvent(com.google.api.services.calendar.Calendar aClient, String aDeadlineCalendarId, Event anEvent)
 			throws IOException, GoogleJsonResponseException {
-		String tempSummary = anEvent.getSummary();
+		String tempSummary = getSummary(anEvent);
 		EventDateTime tempStart = anEvent.getStart();
 
 		Delete tempDelete = aClient.events().delete(aDeadlineCalendarId, anEvent.getId());
@@ -359,7 +359,7 @@ public class GoogleSync {
 			config(tempDelete).execute();
 			logInfo("Deleted " + tempStart + " " + tempSummary + " " + anEvent);
 		} catch (GoogleJsonResponseException e) {
-			logError("Error deleting " + tempStart + " " + anEvent.getSummary() + " " + anEvent, e);
+			logError("Error deleting " + tempStart + " " + getSummary(anEvent) + " " + anEvent, e);
 			throw e;
 		}
 	}
@@ -370,9 +370,9 @@ public class GoogleSync {
 		Insert tempConfig = config(aClient.events().insert(aDeadlineCalendarId, anEvent));
 		try {
 			Event tempResult = tempConfig.execute();
-			logInfo("Added " + tempStart + " " + anEvent.getSummary() + " " + tempResult);
+			logInfo("Added " + tempStart + " " + getSummary(anEvent) + " " + tempResult);
 		} catch (GoogleJsonResponseException e) {
-			logError("Error adding " + tempStart + " " + anEvent.getSummary() + " " + anEvent, e);
+			logError("Error adding " + tempStart + " " + getSummary(anEvent) + " " + anEvent, e);
 			throw e;
 		}
 	}
@@ -398,8 +398,8 @@ public class GoogleSync {
 	}
 
 	private boolean isUpdateDetection(Event aFileEvent, Event aEvent) {
-		String tempSummaryFile = aFileEvent.getSummary().trim();
-		String tempSummaryGoogle = aEvent.getSummary().trim();
+		String tempSummaryFile = getSummary(aFileEvent);
+		String tempSummaryGoogle = getSummary(aEvent);
 		if (!tempSummaryFile.equals(tempSummaryGoogle)) {
 			return true;
 		}
@@ -548,8 +548,8 @@ public class GoogleSync {
 		if (isSameId(aOldEvent, aNewEvent)) {
 			return true;
 		}
-		String tempOldSummary = aOldEvent.getSummary();
-		String tempNewSummary = aNewEvent.getSummary();
+		String tempOldSummary = getSummary(aOldEvent);
+		String tempNewSummary = getSummary(aNewEvent);
 		if (tempOldSummary.equals(tempNewSummary) || tempOldSummary.trim().equals(tempNewSummary.trim())) {
 			EventDateTime tempOldStart = aOldEvent.getStart();
 			DateTime tempDT1 = tempOldStart.getDateTime();
@@ -686,7 +686,7 @@ public class GoogleSync {
 	 * Opposite of {@link #createDeadlineFromGoogleEvent(Event)}
 	 */
 	private Deadline createDeadlineFromGoogleEvent(Event anEvent) {
-		String tempSummary = anEvent.getSummary();
+		String tempSummary = getSummary(anEvent);
 		Deadline tempDeadline = new Deadline();
 		ExtendedProperties tempExtendedProperties = anEvent.getExtendedProperties();
 		if (tempExtendedProperties != null) {
@@ -718,6 +718,10 @@ public class GoogleSync {
 		tempDeadline.setWhen(tempWhen);
 		tempDeadline.setId(anEvent.getId());
 		return tempDeadline;
+	}
+
+	private String getSummary(Event anEvent) {
+		return anEvent.getSummary().replace('\r', ' ').replace('\n', ' ').trim();
 	}
 
 	/**
