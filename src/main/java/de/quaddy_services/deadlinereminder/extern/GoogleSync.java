@@ -398,48 +398,77 @@ public class GoogleSync {
 	}
 
 	private boolean isUpdateDetection(Event aFileEvent, Event aEvent) {
-		String tempSummaryFile = getSummary(aFileEvent);
-		String tempSummaryGoogle = getSummary(aEvent);
+		String tempSummaryFile = removeOverdue(getSummary(aFileEvent));
+		String tempSummaryGoogle = removeOverdue(getSummary(aEvent));
 		if (!tempSummaryFile.equals(tempSummaryGoogle)) {
+			LOGGER.info("Summary changed: " + tempSummaryFile);
+			LOGGER.info("Summary changed: " + tempSummaryGoogle);
 			return true;
 		}
 		EventDateTime tempStart1 = aEvent.getStart();
 		EventDateTime tempStart2 = aFileEvent.getStart();
 		if (tempStart1 == null && tempStart2 != null) {
+			LOGGER.info("EventDateTime changed: tempStart1=" + tempStart1);
+			LOGGER.info("EventDateTime changed: tempStart2=" + tempStart2);
 			return true;
 		}
 		if (tempStart1 != null && tempStart2 == null) {
+			LOGGER.info("EventDateTime changed: tempStart1=" + tempStart1);
+			LOGGER.info("EventDateTime changed: tempStart2=" + tempStart2);
 			return true;
 		}
 		if (tempStart1 != null && tempStart2 != null) {
 			DateTime tempDate1 = tempStart1.getDate();
 			DateTime tempDate2 = tempStart2.getDate();
 			if (tempDate1 == null && tempDate2 != null) {
+				LOGGER.info("getDate().DateTime changed: tempDate1=" + tempDate1);
+				LOGGER.info("getDate().DateTime changed: tempDate2=" + tempDate2);
 				return true;
 			}
 			if (tempDate1 != null && tempDate2 == null) {
+				LOGGER.info("getDate().DateTime changed: tempDate1=" + tempDate1);
+				LOGGER.info("getDate().DateTime changed: tempDate2=" + tempDate2);
 				return true;
 			}
 			if (tempDate1 != null && tempDate2 != null) {
 				if (!tempDate1.equals(tempDate2)) {
+					LOGGER.info("getDate().DateTime changed: tempDate1=" + tempDate1);
+					LOGGER.info("getDate().DateTime changed: tempDate2=" + tempDate2);
 					return true;
 				}
 			}
 			tempDate1 = tempStart1.getDateTime();
 			tempDate2 = tempStart2.getDateTime();
 			if (tempDate1 == null && tempDate2 != null) {
+				LOGGER.info("getDateTime().DateTime changed: tempDate1=" + tempDate1);
+				LOGGER.info("getDateTime().DateTime changed: tempDate2=" + tempDate2);
 				return true;
 			}
 			if (tempDate1 != null && tempDate2 == null) {
+				LOGGER.info("getDateTime().DateTime changed: tempDate1=" + tempDate1);
+				LOGGER.info("getDateTime().DateTime changed: tempDate2=" + tempDate2);
 				return true;
 			}
 			if (tempDate1 != null && tempDate2 != null) {
 				if (!tempDate1.equals(tempDate2)) {
+					LOGGER.info("getDateTime().DateTime changed: tempDate1=" + tempDate1);
+					LOGGER.info("getDateTime().DateTime changed: tempDate2=" + tempDate2);
 					return true;
 				}
 			}
 		}
 		return false;
+	}
+
+	private String removeOverdue(String aSummary) {
+		String tempSummary;
+		if (aSummary.startsWith(OVERDUE_MARKER)) {
+			// Remove the overdue marker for comparing.
+			tempSummary = aSummary.substring(OVERDUE_MARKER.length());
+		} else {
+			tempSummary = aSummary;
+		}
+		return tempSummary;
 	}
 
 	private boolean isManuallyCreatedEntry(DateTime aLastSyncStarted, Event aEvent) {
@@ -450,6 +479,9 @@ public class GoogleSync {
 				// created by DeadlineReminder.
 				return false;
 			}
+		}
+		if (getSummary(aEvent).startsWith(OVERDUE_MARKER)) {
+			return false;
 		}
 		// try to guess:
 		if (aLastSyncStarted == null) {
@@ -628,7 +660,7 @@ public class GoogleSync {
 		Date tempStartDateTime;
 		boolean tempIsWholeDayEvent;
 		if (aDeadline.getWhen().before(tempTodayMorning)) {
-			tempText = OVERDUE_MARKER + tempTextWithoutRepeatingInfo + " !" + DATE_FORMAT.format(aDeadline.getWhen()) + "!";
+			tempText = OVERDUE_MARKER + tempTextWithoutRepeatingInfo;
 			tempStartDateTime = tempTodayMorning;
 			tempIsWholeDayEvent = true; // avoid 400 Bad Request "The specified time range is empty." #5
 		} else {
@@ -721,7 +753,10 @@ public class GoogleSync {
 	}
 
 	private String getSummary(Event anEvent) {
-		return anEvent.getSummary().replace('\r', ' ').replace('\n', ' ').replace('\t', ' ').trim();
+		String tempGoogleSummary = anEvent.getSummary();
+		String tempOneLineSummary = tempGoogleSummary.replace('\r', ' ').replace('\n', ' ').replace('\t', ' ');
+		String tempTrimmedSummary = tempOneLineSummary.trim();
+		return tempTrimmedSummary;
 	}
 
 	/**
