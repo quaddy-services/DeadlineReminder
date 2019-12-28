@@ -167,10 +167,9 @@ public class FileStorage implements Storage {
 			if (tempLine.trim().length() > 0) {
 				Deadline tempDeadline = new Deadline();
 				tempDeadline.setWhen(new Date());
-				tempDeadline.setInfo(tempLine);
+				tempDeadline.setInfo(tempLine + " " + e);
 				tempDeadlines.add(tempDeadline);
 			}
-
 		}
 		return tempDeadlines;
 	}
