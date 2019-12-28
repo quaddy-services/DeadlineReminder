@@ -646,10 +646,6 @@ public class GoogleSync {
 	private Event createGoogleEventFromDeadline(Deadline aDeadline) {
 		Date tempTodayMorning = midnight(new Date());
 		Event event = new Event();
-		String tempId = aDeadline.getId();
-		if (tempId != null) {
-			event.setId(tempId);
-		}
 		ExtendedProperties tempExtendedProperties = event.getExtendedProperties();
 		if (tempExtendedProperties == null) {
 			tempExtendedProperties = new ExtendedProperties();
@@ -659,14 +655,26 @@ public class GoogleSync {
 		String tempText;
 		Date tempStartDateTime;
 		boolean tempIsWholeDayEvent;
+		boolean tempIsOverdue;
 		if (aDeadline.getWhen().before(tempTodayMorning)) {
+			tempIsOverdue = true;
 			tempText = OVERDUE_MARKER + tempTextWithoutRepeatingInfo;
 			tempStartDateTime = tempTodayMorning;
 			tempIsWholeDayEvent = true; // avoid 400 Bad Request "The specified time range is empty." #5
 		} else {
+			tempIsOverdue = false;
 			tempText = tempTextWithoutRepeatingInfo;
 			tempStartDateTime = aDeadline.getWhen();
 			tempIsWholeDayEvent = aDeadline.isWholeDayEvent();
+		}
+		String tempId = aDeadline.getId();
+		if (tempId != null) {
+			if (tempIsOverdue) {
+				// Create a new calendar entry in the google calendar (on next day)
+				logInfo(tempText + " is overdue and so do not takeover Google Id " + tempId);
+			} else {
+				event.setId(tempId);
+			}
 		}
 		tempExtendedProperties.put("TextWithoutRepeatingInfo", tempText);
 		event.setSummary(tempText.trim());
