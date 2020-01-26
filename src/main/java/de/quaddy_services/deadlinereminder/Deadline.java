@@ -31,6 +31,7 @@ public class Deadline {
 	private Date repeating;
 	private String textWithoutRepeatingInfo;
 	private String id;
+	private boolean deleted;
 
 	public Date getWhen() {
 		return when;
@@ -288,5 +289,14 @@ public class Deadline {
 	 */
 	public final void setWhenEndTime(Date aWhenEndTime) {
 		whenEndTime = aWhenEndTime;
+	}
+
+	public void setDeleted(boolean aDeletedFlag) {
+		deleted = aDeletedFlag;
+	}
+
+	public boolean isDeleted() {
+		// TODO Auto-generated method stub
+		return deleted;
 	}
 }

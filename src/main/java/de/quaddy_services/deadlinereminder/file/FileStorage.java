@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -107,7 +108,22 @@ public class FileStorage implements Storage {
 			}
 		}
 		tempReader.close();
+		removeAllDeleted(tempMatchingDeadlines);
 		return tempMatchingDeadlines;
+	}
+
+	/**
+	 * While adding the IDs it may be non-deleted or deleted.
+	 * With tempPreviouslyAdded above we found the latest state of google event.
+	 * @param aMatchingDeadlines
+	 */
+	private void removeAllDeleted(List<Deadline> aMatchingDeadlines) {
+		for (Iterator<Deadline> i = aMatchingDeadlines.iterator(); i.hasNext();) {
+			Deadline tempDeadline = i.next();
+			if (tempDeadline.isDeleted()) {
+				i.remove();
+			}
+		}
 	}
 
 	protected BufferedReader createReader(File tempFile) throws IOException {
@@ -141,7 +157,13 @@ public class FileStorage implements Storage {
 			tempId = tempLine.substring(ID_PREFIX.length(), tempTabPos);
 			tempLine = tempLine.substring(tempTabPos + 1);
 			if (DELETED_MARKER.equals(tempLine)) {
-				// return nothing
+				// return deleted deadline as previously the un.deleted one was added
+				// while parsing the file
+				Deadline tempDeadline = new Deadline();
+				tempDeadline.setId(tempId);
+				tempDeadline.setDeleted(true);
+				tempDeadline.setWhen(new Date());
+				tempDeadlines.add(tempDeadline);
 				return tempDeadlines;
 			}
 		} else {
