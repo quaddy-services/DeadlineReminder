@@ -16,4 +16,6 @@ public interface Storage {
 	 *
 	 */
 	void addFromGroogle(List<Deadline> aDeadline) throws IOException;
+
+	void removeFromGroogle(List<Deadline> aRemovedFromGoogle) throws IOException;
 }

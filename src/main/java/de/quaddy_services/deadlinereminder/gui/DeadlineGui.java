@@ -225,7 +225,19 @@ public class DeadlineGui extends JPanel {
 					@Override
 					public void run() {
 						model.getAddedFromGoogle().add(aDeadline);
-						LOGGER.info("Reload model due to " + aDeadline);
+						LOGGER.info("Reload model due to add " + aDeadline);
+						modelLoaderMustBeReleadedListener.reloadModelNextTime();
+					}
+				});
+			}
+
+			@Override
+			public void removeDeadlines(final List<Deadline> aDeadlines) {
+				EventQueue.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						model.getRemovedFromGoogle().addAll(aDeadlines);
+						LOGGER.info("Reload model due to Remove " + aDeadlines);
 						modelLoaderMustBeReleadedListener.reloadModelNextTime();
 					}
 				});

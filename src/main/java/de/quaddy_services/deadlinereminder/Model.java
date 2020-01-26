@@ -6,6 +6,8 @@ import java.util.List;
 public class Model {
 	private List<Deadline> openDeadlines;
 	private List<Deadline> addedFromGoogle = new ArrayList<>();
+	private List<Deadline> removedFromGoogle = new ArrayList<>();
+
 	private String sourceInfo;
 
 	public List<Deadline> getOpenDeadlines() {
@@ -29,6 +31,10 @@ public class Model {
 	 */
 	public List<Deadline> getAddedFromGoogle() {
 		return addedFromGoogle;
+	}
+
+	public List<Deadline> getRemovedFromGoogle() {
+		return removedFromGoogle;
 	}
 
 }

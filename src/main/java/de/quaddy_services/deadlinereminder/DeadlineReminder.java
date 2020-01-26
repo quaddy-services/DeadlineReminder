@@ -170,6 +170,13 @@ public class DeadlineReminder {
 		} catch (IOException e) {
 			throw new RuntimeException("Error", e);
 		}
+		try {
+			List<Deadline> tempRemovedFromGoogle = new ArrayList<>(model.getRemovedFromGoogle());
+			model.getRemovedFromGoogle().clear();
+			tempFileStorage.removeFromGroogle(tempRemovedFromGoogle);
+		} catch (IOException e) {
+			throw new RuntimeException("Error", e);
+		}
 	}
 
 	private void every10Minutes() {
@@ -193,7 +200,7 @@ public class DeadlineReminder {
 					break;
 				}
 			}
-			if (tempDoneAvailable || !model.getAddedFromGoogle().isEmpty()) {
+			if (tempDoneAvailable || !model.getAddedFromGoogle().isEmpty() || !model.getRemovedFromGoogle().isEmpty()) {
 				saveModel();
 			}
 			model = createModel();

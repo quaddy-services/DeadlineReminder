@@ -32,15 +32,15 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.api.client.util.DateTime;
+import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.Calendar.Events.Delete;
 import com.google.api.services.calendar.Calendar.Events.Insert;
-import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.CalendarList;
 import com.google.api.services.calendar.model.CalendarListEntry;
 import com.google.api.services.calendar.model.Event;
-import com.google.api.services.calendar.model.Event.ExtendedProperties;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
+import com.google.api.services.calendar.model.Event.ExtendedProperties;
 
 import de.quaddy_services.deadlinereminder.Deadline;
 import de.quaddy_services.deadlinereminder.DeadlineComparator;
@@ -153,6 +153,11 @@ public class GoogleSync {
 			public void addNewDeadline(Deadline aDeadline) {
 				LOGGER.info("addNewDeadline: " + aDeadline);
 			}
+
+			@Override
+			public void removeDeadlines(List<Deadline> aDeadlines) {
+				LOGGER.info("removeDeadlines: " + aDeadlines);
+			}
 		};
 		new GoogleSync().push(tempDeadlines, tempDoneSelectionListener);
 		System.exit(0);
@@ -192,7 +197,9 @@ public class GoogleSync {
 
 		long tempStartMillis = System.currentTimeMillis();
 
-		CalendarList tempCalendarList = config(client.calendarList().list()).execute();
+		com.google.api.services.calendar.Calendar.CalendarList.List tempGoogleCalendarList = client.calendarList().list();
+		// https://developers.google.com/calendar/v3/reference/calendarList/list
+		CalendarList tempCalendarList = config(tempGoogleCalendarList).execute();
 		String tempDeadlineCalendarId = null;
 		if (tempCalendarList.getItems() != null) {
 			for (CalendarListEntry tempEntry : tempCalendarList.getItems()) {
@@ -216,6 +223,34 @@ public class GoogleSync {
 		Calendar tempTooFarAway = Calendar.getInstance();
 		tempTooFarAway.add(Calendar.YEAR, 2);
 
+		ArrayList<Event> tempCurrentGoogleEvents;
+		tempCurrentGoogleEvents = getCurrentItems(client, tempDeadlineCalendarId);
+		logInfo("Already at Google (including history+deleted): " + tempCurrentGoogleEvents.size());
+
+		List<Deadline> tempRemovedDeadlines = new ArrayList<>();
+		for (Iterator<Event> iCurrent = tempCurrentGoogleEvents.iterator(); iCurrent.hasNext();) {
+			Event tempGoogleEvent = iCurrent.next();
+			String tempStatus = tempGoogleEvent.getStatus();
+			if ("cancelled".equals(tempStatus)) {
+				// deleted
+				iCurrent.remove();
+				// and remove from deadlines shown in the gui
+				String tempGoogleId = tempGoogleEvent.getId();
+				for (Iterator<Deadline> iDeadline = aOpenDeadlines.iterator(); iDeadline.hasNext();) {
+					Deadline tempDeadline = iDeadline.next();
+					String tempDeadlineId = tempDeadline.getId();
+					if (tempDeadlineId != null && tempGoogleId.equals(tempDeadlineId)) {
+						iDeadline.remove();
+						tempRemovedDeadlines.add(tempDeadline);
+					}
+				}
+			}
+		}
+		if (tempRemovedDeadlines.size() > 0) {
+			aDoneSelectionListener.removeDeadlines(tempRemovedDeadlines);
+		}
+		logInfo("Already at Google (including history): " + tempCurrentGoogleEvents.size());
+
 		Map<Event, Deadline> tempNewEvents = new IdentityHashMap<>();
 		for (Deadline tempDeadline : aOpenDeadlines) {
 			if (tempDeadline.getWhen().after(tempTooFarAway.getTime())) {
@@ -225,9 +260,6 @@ public class GoogleSync {
 			tempNewEvents.put(event, tempDeadline);
 		}
 		logInfo("Matching local events: " + tempNewEvents.size());
-		ArrayList<Event> tempCurrentGoogleEvents;
-		tempCurrentGoogleEvents = getCurrentItems(client, tempDeadlineCalendarId);
-		logInfo("Already at Google (including history): " + tempCurrentGoogleEvents.size());
 		List<Event> tempAlreadyKeptEvents = new ArrayList<>();
 		Set<Event> tempDuplicateGoogleEvents = new HashSet<>();
 		long tempNow = System.currentTimeMillis();
@@ -611,6 +643,9 @@ public class GoogleSync {
 
 	private ArrayList<Event> getCurrentItems(com.google.api.services.calendar.Calendar client, String tempDeadlineCalendarId) throws IOException {
 		com.google.api.services.calendar.Calendar.Events.List tempList = client.events().list(tempDeadlineCalendarId);
+		// https://developers.google.com/calendar/v3/reference/events/list
+		tempList.setShowDeleted(true);
+
 		ArrayList<Event> tempCurrentEvents = new ArrayList<Event>();
 		while (true) {
 			if (DEBUG) {
@@ -631,6 +666,7 @@ public class GoogleSync {
 			if (tempNextPageToken == null) {
 				break;
 			}
+			logInfo("Next page currentSize=" + tempCurrentEvents.size());
 			tempList.setPageToken(tempNextPageToken);
 		}
 		return tempCurrentEvents;

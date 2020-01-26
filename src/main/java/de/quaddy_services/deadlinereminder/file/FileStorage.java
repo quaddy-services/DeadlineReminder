@@ -41,6 +41,8 @@ public class FileStorage implements Storage {
 
 	public static final String TERMIN_LAST_SYNC_TXT = "termin-last-sync.txt";
 
+	private static final String DELETED_MARKER = "DELETED_MARKER";
+
 	public FileStorage() {
 		super();
 	}
@@ -138,6 +140,10 @@ public class FileStorage implements Storage {
 			int tempTabPos = tempLine.indexOf("\t");
 			tempId = tempLine.substring(ID_PREFIX.length(), tempTabPos);
 			tempLine = tempLine.substring(tempTabPos + 1);
+			if (DELETED_MARKER.equals(tempLine)) {
+				// return nothing
+				return tempDeadlines;
+			}
 		} else {
 			tempId = null;
 		}
@@ -403,6 +409,25 @@ public class FileStorage implements Storage {
 					}
 					tempDeadlineText.append(" ");
 					tempDeadlineText.append(tempDeadline.getTextWithoutRepeatingInfo());
+
+					tempFileWriter.append(tempDeadlineText.toString());
+					tempFileWriter.append(System.lineSeparator());
+				}
+			}
+		}
+	}
+
+	@Override
+	public void removeFromGroogle(List<Deadline> aDeadlines) throws IOException {
+		synchronized (MONITOR) {
+			File tempFile = new File(getDirectory().getAbsolutePath() + "/" + TERMIN_GOOGLE_ADDED_TXT);
+			try (BufferedWriter tempFileWriter = createFileWriter(tempFile)) {
+				for (Deadline tempDeadline : aDeadlines) {
+					StringBuilder tempDeadlineText = new StringBuilder();
+					tempDeadlineText.append(ID_PREFIX);
+					tempDeadlineText.append(tempDeadline.getId());
+					tempDeadlineText.append("\t");
+					tempDeadlineText.append(DELETED_MARKER);
 
 					tempFileWriter.append(tempDeadlineText.toString());
 					tempFileWriter.append(System.lineSeparator());
