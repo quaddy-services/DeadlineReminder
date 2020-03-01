@@ -32,15 +32,15 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.api.client.util.DateTime;
-import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.Calendar.Events.Delete;
 import com.google.api.services.calendar.Calendar.Events.Insert;
+import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.CalendarList;
 import com.google.api.services.calendar.model.CalendarListEntry;
 import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.Event.ExtendedProperties;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
-import com.google.api.services.calendar.model.Event.ExtendedProperties;
 
 import de.quaddy_services.deadlinereminder.Deadline;
 import de.quaddy_services.deadlinereminder.DeadlineComparator;
@@ -62,8 +62,8 @@ public class GoogleSync {
 	private static final boolean DEBUG = false;
 
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yy");
-	private static DateTime lastSyncStarted = null;
-	private static int syncErrorCount = 0;
+	private DateTime lastSyncStarted = null;
+	private int syncErrorCount = 0;
 
 	private Thread t = null;
 	private LogListener logListener = null;
@@ -75,7 +75,7 @@ public class GoogleSync {
 		LOGGER.info("Use timeZone=" + timeZone);
 	}
 
-	public void pushToGoogle(final List<Deadline> aOpenDeadlines, final DoneSelectionListener aDoneSelectionListener) {
+	public synchronized void pushToGoogle(final List<Deadline> aOpenDeadlines, final DoneSelectionListener aDoneSelectionListener) {
 		if (t != null) {
 			logWarn("Already active: " + t);
 			return;
@@ -529,7 +529,7 @@ public class GoogleSync {
 	/**
 	 *
 	 */
-	private static synchronized void setLastSyncStarted(DateTime aDateTime) {
+	private void setLastSyncStarted(DateTime aDateTime) {
 		lastSyncStarted = aDateTime;
 		File tempLastSyncFile = new FileStorage().getLastSyncFile();
 		try (FileOutputStream tempOut = new FileOutputStream(tempLastSyncFile)) {
@@ -543,7 +543,7 @@ public class GoogleSync {
 	/**
 	 *
 	 */
-	private static synchronized DateTime getLastSyncStarted() {
+	private DateTime getLastSyncStarted() {
 		if (lastSyncStarted == null) {
 			File tempFile = new FileStorage().getLastSyncFile();
 			if (tempFile.exists()) {
