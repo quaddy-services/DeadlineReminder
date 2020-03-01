@@ -92,7 +92,10 @@ public class GoogleSync {
 					}
 					syncErrorCount = 0;
 				} catch (SocketTimeoutException e) {
-					logError("Retry later...", e);
+					logError("SocketTimeoutException: Retry later...", e);
+				} catch (java.net.UnknownHostException e) {
+					// May happen in case network is completely down (flightmode)
+					logError("UnknownHostException: Retry later...", e);
 				} catch (Exception e) {
 					syncErrorCount++;
 					logError("Error on sync (syncErrorCount=" + syncErrorCount + ")", e);
