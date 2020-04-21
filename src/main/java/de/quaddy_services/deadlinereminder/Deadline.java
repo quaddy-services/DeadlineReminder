@@ -97,7 +97,7 @@ public class Deadline {
 			if (other.info != null) {
 				return false;
 			}
-		} else if (!info.trim().equals(other.info.trim())) {
+		} else if (other.info != null && !info.trim().equals(other.info.trim())) {
 			return false;
 		}
 		if (when == null) {
