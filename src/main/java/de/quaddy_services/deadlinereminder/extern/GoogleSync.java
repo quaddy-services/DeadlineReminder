@@ -1,10 +1,14 @@
 package de.quaddy_services.deadlinereminder.extern;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -34,6 +38,7 @@ import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar.Events.Delete;
 import com.google.api.services.calendar.Calendar.Events.Insert;
+import com.google.api.services.calendar.Calendar.Events.Patch;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.CalendarList;
 import com.google.api.services.calendar.model.CalendarListEntry;
@@ -360,6 +365,13 @@ public class GoogleSync {
 			} else if (isManuallyCreatedEntry(tempLastSyncStarted, tempEvent)) {
 				logInfo("Looks like it is a manual created event in Google=" + tempStart + " " + tempSummary);
 				Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
+				if (tempDeadline.isWholeDayEvent()) {
+					if ("transparent".equals(tempEvent.getTransparency())) {
+						// "transparent" will be ticked as done on next sync.
+						logInfo("Make the wholeday event not checked: " + tempSummary);
+						googleUpdateEventTransparency(client, tempDeadlineCalendarId, tempEvent, "opaque");
+					}
+				}
 				// tempNewEvents needs not to be updated as event is already at google.
 				// and next time it will be detected as normally added one.
 				aDoneSelectionListener.addNewDeadline(tempDeadline);
@@ -406,6 +418,21 @@ public class GoogleSync {
 		try {
 			Event tempResult = tempConfig.execute();
 			logInfo("Added " + tempStart + " " + getSummary(anEvent) + " " + tempResult);
+		} catch (GoogleJsonResponseException e) {
+			logError("Error adding " + tempStart + " " + getSummary(anEvent) + " " + anEvent, e);
+			throw e;
+		}
+	}
+
+	private void googleUpdateEventTransparency(com.google.api.services.calendar.Calendar aClient, String aDeadlineCalendarId, Event anEvent,
+			String aTransparency) throws IOException, GoogleJsonResponseException {
+		EventDateTime tempStart = anEvent.getStart();
+		Event tempPatch = new Event();
+		tempPatch.setTransparency(aTransparency);
+		Patch tempConfig = config(aClient.events().patch(aDeadlineCalendarId, anEvent.getId(), tempPatch));
+		try {
+			Event tempResult = tempConfig.execute();
+			logInfo("Updated " + tempStart + " " + getSummary(anEvent) + " Transparence=" + aTransparency + " " + tempResult);
 		} catch (GoogleJsonResponseException e) {
 			logError("Error adding " + tempStart + " " + getSummary(anEvent) + " " + anEvent, e);
 			throw e;
@@ -535,8 +562,9 @@ public class GoogleSync {
 	private void setLastSyncStarted(DateTime aDateTime) {
 		lastSyncStarted = aDateTime;
 		File tempLastSyncFile = new FileStorage().getLastSyncFile();
-		try (FileOutputStream tempOut = new FileOutputStream(tempLastSyncFile)) {
-			tempOut.write(new Date().toString().getBytes());
+		try (BufferedWriter tempOut = new BufferedWriter(new FileWriter(tempLastSyncFile))) {
+			String tempString = new Timestamp(System.currentTimeMillis()).toString();
+			tempOut.write(tempString);
 		} catch (IOException e) {
 			LOGGER.error("Ignore " + tempLastSyncFile.getAbsolutePath(), e);
 		}
@@ -550,9 +578,18 @@ public class GoogleSync {
 		if (lastSyncStarted == null) {
 			File tempFile = new FileStorage().getLastSyncFile();
 			if (tempFile.exists()) {
-				long tempFileDate = tempFile.lastModified();
-				lastSyncStarted = new DateTime(new Date(tempFileDate));
-				LOGGER.info("Found via file: lastSyncStarted=" + lastSyncStarted);
+				try (BufferedReader tempIn = new BufferedReader(new FileReader(tempFile))) {
+					String tempLine = tempIn.readLine();
+					LOGGER.info("getLastSyncStarted: Found via file: " + tempFile + " tempLine=" + tempLine);
+					lastSyncStarted = new DateTime(Timestamp.valueOf(tempLine));
+					LOGGER.info("getLastSyncStarted: Found via file: lastSyncStarted=" + lastSyncStarted);
+				} catch (IOException e) {
+					logError("Ignore " + tempFile.getAbsolutePath(), e);
+					lastSyncStarted = null;
+				} catch (RuntimeException e) {
+					logError("Ignore " + tempFile.getAbsolutePath(), e);
+					lastSyncStarted = null;
+				}
 			}
 		}
 		return lastSyncStarted;
