@@ -782,7 +782,8 @@ public class GoogleSync {
 		String tempDescription = "";
 		tempDescription += "READ-ONLY. See termin.txt";
 		if (aDeadline.getRepeating() != null) {
-			tempDescription += " - since (" + DeadlineGui.dateFormatWithDay.format(aDeadline.getRepeating()) + ")";
+			tempDescription += "\n\n - since (" + DeadlineGui.dateFormatWithDay.format(aDeadline.getRepeating()) + ")";
+			tempDescription += "\n\n " + aDeadline.getInfo();
 		}
 		event.setDescription(tempDescription);
 		return event;
