@@ -69,7 +69,8 @@ public class OAuth2Native {
 
 	private static final String RESOURCE_LOCATION = "/client_secrets.json";
 
-	private static final String RESOURCE_PATH = ("shared/shared-sample-cmdline/src/main/resources" + RESOURCE_LOCATION).replace('/', File.separatorChar);
+	private static final String RESOURCE_PATH = ("shared/shared-sample-cmdline/src/main/resources" + RESOURCE_LOCATION)
+			.replace('/', File.separatorChar);
 
 	/**
 	 * Browser to open in case {@link Desktop#isDesktopSupported()} is {@code
@@ -104,8 +105,11 @@ public class OAuth2Native {
 			Preconditions.checkNotNull(inputStream, "missing resource %s", RESOURCE_LOCATION);
 			clientSecrets = GoogleClientSecrets.load(jsonFactory, new InputStreamReader(inputStream, "UTF-8"));
 			Preconditions.checkArgument(
-					!clientSecrets.getDetails().getClientId().startsWith("[[") && !clientSecrets.getDetails().getClientSecret().startsWith("[["),
-					"Please enter your client ID and secret from the Google APIs Console in %s from the " + "root samples directory", RESOURCE_PATH);
+					!clientSecrets.getDetails().getClientId().startsWith("[[")
+							&& !clientSecrets.getDetails().getClientSecret().startsWith("[["),
+					"Please enter your client ID and secret from the Google APIs Console in %s from the "
+							+ "root samples directory",
+					RESOURCE_PATH);
 		}
 		return clientSecrets;
 	}
@@ -122,12 +126,13 @@ public class OAuth2Native {
 	 * @param scopes
 	 *            OAuth 2.0 scopes
 	 */
-	public static Credential authorize(HttpTransport transport, JsonFactory jsonFactory, VerificationCodeReceiver receiver, Collection<String> scopes)
-			throws Exception {
+	public static Credential authorize(HttpTransport transport, JsonFactory jsonFactory,
+			VerificationCodeReceiver receiver, Collection<String> scopes) throws Exception {
 		String redirectUri = receiver.getRedirectUri();
 		GoogleClientSecrets tempClientSecrets = loadClientSecrets(jsonFactory);
 		// redirect to an authorization page
-		GoogleAuthorizationCodeFlow.Builder tempBuilder = new GoogleAuthorizationCodeFlow.Builder(transport, jsonFactory, tempClientSecrets, scopes);
+		GoogleAuthorizationCodeFlow.Builder tempBuilder = new GoogleAuthorizationCodeFlow.Builder(transport,
+				jsonFactory, tempClientSecrets, scopes);
 		tempBuilder.setCredentialStore(new PersistentCredentialStore());
 		GoogleAuthorizationCodeFlow flow = tempBuilder.build();
 		String tempUserName = System.getProperty("user.name", "-");
@@ -147,6 +152,14 @@ public class OAuth2Native {
 
 	/** Open a browser at the given URL. */
 	private static void browse(String url) {
+		try {
+			Runtime.getRuntime()
+					.exec(new String[] { "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", url });
+			return;
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		// first try the Java Desktop
 		if (Desktop.isDesktopSupported()) {
 			Desktop desktop = Desktop.getDesktop();
