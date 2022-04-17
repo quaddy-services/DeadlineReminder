@@ -79,8 +79,7 @@ public class GoogleSync {
 		LOGGER.info("Use timeZone=" + timeZone);
 	}
 
-	public synchronized void pushToGoogle(final List<Deadline> aOpenDeadlines,
-			final DoneSelectionListener aDoneSelectionListener) {
+	public synchronized void pushToGoogle(final List<Deadline> aOpenDeadlines, final DoneSelectionListener aDoneSelectionListener) {
 		if (t != null) {
 			logWarn("Already active: " + t);
 			return;
@@ -110,6 +109,7 @@ public class GoogleSync {
 						PersistentCredentialStore tempPersistentCredentialStore = new PersistentCredentialStore();
 						tempPersistentCredentialStore.delete(tempUserName);
 					}
+					OAuth2Native.clearCache();
 				} finally {
 					t = null;
 				}
@@ -178,22 +178,29 @@ public class GoogleSync {
 	 * @param aDoneSelectionListener
 	 * @throws Exception
 	 */
-	protected boolean push(List<Deadline> aOpenDeadlines, DoneSelectionListener aDoneSelectionListener)
-			throws Exception {
+	protected boolean push(List<Deadline> aOpenDeadlines, DoneSelectionListener aDoneSelectionListener) throws Exception {
 		/** Global instance of the HTTP transport. */
 		HttpTransport HTTP_TRANSPORT = createNetHttpTransport();
 
 		/** Global instance of the JSON factory. */
 		JacksonFactory JSON_FACTORY = new JacksonFactory();
 		// authorization
-		Credential credential = OAuth2Native.authorize(HTTP_TRANSPORT, JSON_FACTORY, new LocalServerReceiver(),
-				Arrays.asList(CalendarScopes.CALENDAR));
+		Credential credential = OAuth2Native.authorize(HTTP_TRANSPORT, JSON_FACTORY, new LocalServerReceiver(), Arrays.asList(CalendarScopes.CALENDAR));
 		// set up global Calendar instance
-		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(
-				HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName("DeadlineReminder/1.0")
-						.setHttpRequestInitializer(credential).build();
+		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential)
+				.setApplicationName("DeadlineReminder/1.0").setHttpRequestInitializer(credential).build();
 
-		return push(client, aOpenDeadlines, aDoneSelectionListener);
+		try {
+			return push(client, aOpenDeadlines, aDoneSelectionListener);
+		} catch (com.google.api.client.auth.oauth2.TokenResponseException e) {
+			logError("OAuth error", e);
+			logInfo("Next time request new authentication token.");
+			String tempUserName = System.getProperty("user.name", "-");
+			PersistentCredentialStore tempPersistentCredentialStore = new PersistentCredentialStore();
+			tempPersistentCredentialStore.delete(tempUserName);
+			OAuth2Native.clearCache();
+			throw e;
+		}
 	}
 
 	/**
@@ -203,13 +210,12 @@ public class GoogleSync {
 		return new NetHttpTransport.Builder().build();
 	}
 
-	private boolean push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines,
-			DoneSelectionListener aDoneSelectionListener) throws IOException {
+	private boolean push(com.google.api.services.calendar.Calendar client, List<Deadline> aOpenDeadlines, DoneSelectionListener aDoneSelectionListener)
+			throws IOException {
 
 		long tempStartMillis = System.currentTimeMillis();
 
-		com.google.api.services.calendar.Calendar.CalendarList.List tempGoogleCalendarList = client.calendarList()
-				.list();
+		com.google.api.services.calendar.Calendar.CalendarList.List tempGoogleCalendarList = client.calendarList().list();
 		// https://developers.google.com/calendar/v3/reference/calendarList/list
 		CalendarList tempCalendarList = config(tempGoogleCalendarList).execute();
 		String tempDeadlineCalendarId = null;
@@ -281,8 +287,7 @@ public class GoogleSync {
 				Event tempSameEvent = getSameEvent(tempNewEvents.keySet(), tempGoogleEvent);
 				if (tempSameEvent != null) {
 					Deadline tempDeadline = tempNewEvents.get(tempSameEvent);
-					logInfo("Google calendar entry was marked available and so make it done. tempDeadline="
-							+ tempDeadline);
+					logInfo("Google calendar entry was marked available and so make it done. tempDeadline=" + tempDeadline);
 					tempDeadline.setDone(true);
 					aDoneSelectionListener.deadlineDone(tempDeadline);
 				}
@@ -326,8 +331,7 @@ public class GoogleSync {
 					iCurrent.remove();
 					continue;
 				}
-				LOGGER.info("Found a new Event: " + tempSummary + " Date=" + tempDate + " DateTime=" + tempDateTime
-						+ " " + tempGoogleEvent);
+				LOGGER.info("Found a new Event: " + tempSummary + " Date=" + tempDate + " DateTime=" + tempDateTime + " " + tempGoogleEvent);
 			}
 		}
 		logInfo("Already at Google tempAlreadyKeptEvents: " + tempAlreadyKeptEvents.size());
@@ -349,8 +353,7 @@ public class GoogleSync {
 					if (tempSameId) {
 						if (isUpdated(tempNewEvent, tempEvent)) {
 							Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
-							logInfo("Add the updated values to from-google file "
-									+ tempDeadline.getTextWithoutRepeatingInfo());
+							logInfo("Add the updated values to from-google file " + tempDeadline.getTextWithoutRepeatingInfo());
 							aDoneSelectionListener.addNewDeadline(tempDeadline);
 						}
 					}
@@ -406,8 +409,8 @@ public class GoogleSync {
 		return true;
 	}
 
-	private void googleDeleteEvent(com.google.api.services.calendar.Calendar aClient, String aDeadlineCalendarId,
-			Event anEvent) throws IOException, GoogleJsonResponseException {
+	private void googleDeleteEvent(com.google.api.services.calendar.Calendar aClient, String aDeadlineCalendarId, Event anEvent)
+			throws IOException, GoogleJsonResponseException {
 		String tempSummary = getSummary(anEvent);
 		EventDateTime tempStart = anEvent.getStart();
 
@@ -421,8 +424,8 @@ public class GoogleSync {
 		}
 	}
 
-	private void googleInsertEvent(com.google.api.services.calendar.Calendar aClient, String aDeadlineCalendarId,
-			Event anEvent) throws IOException, GoogleJsonResponseException {
+	private void googleInsertEvent(com.google.api.services.calendar.Calendar aClient, String aDeadlineCalendarId, Event anEvent)
+			throws IOException, GoogleJsonResponseException {
 		EventDateTime tempStart = anEvent.getStart();
 		Insert tempConfig = config(aClient.events().insert(aDeadlineCalendarId, anEvent));
 		try {
@@ -434,17 +437,15 @@ public class GoogleSync {
 		}
 	}
 
-	private void googleUpdateEventTransparency(com.google.api.services.calendar.Calendar aClient,
-			String aDeadlineCalendarId, Event anEvent, String aTransparency)
-			throws IOException, GoogleJsonResponseException {
+	private void googleUpdateEventTransparency(com.google.api.services.calendar.Calendar aClient, String aDeadlineCalendarId, Event anEvent,
+			String aTransparency) throws IOException, GoogleJsonResponseException {
 		EventDateTime tempStart = anEvent.getStart();
 		Event tempPatch = new Event();
 		tempPatch.setTransparency(aTransparency);
 		Patch tempConfig = config(aClient.events().patch(aDeadlineCalendarId, anEvent.getId(), tempPatch));
 		try {
 			Event tempResult = tempConfig.execute();
-			logInfo("Updated " + tempStart + " " + getSummary(anEvent) + " Transparence=" + aTransparency + " "
-					+ tempResult);
+			logInfo("Updated " + tempStart + " " + getSummary(anEvent) + " Transparence=" + aTransparency + " " + tempResult);
 		} catch (GoogleJsonResponseException e) {
 			logError("Error adding " + tempStart + " " + getSummary(anEvent) + " " + anEvent, e);
 			throw e;
@@ -699,8 +700,7 @@ public class GoogleSync {
 		return false;
 	}
 
-	private ArrayList<Event> getCurrentItems(com.google.api.services.calendar.Calendar client,
-			String tempDeadlineCalendarId) throws IOException {
+	private ArrayList<Event> getCurrentItems(com.google.api.services.calendar.Calendar client, String tempDeadlineCalendarId) throws IOException {
 		com.google.api.services.calendar.Calendar.Events.List tempList = client.events().list(tempDeadlineCalendarId);
 		// https://developers.google.com/calendar/v3/reference/events/list
 		tempList.setShowDeleted(true);
