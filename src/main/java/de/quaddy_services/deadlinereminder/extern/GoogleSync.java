@@ -332,29 +332,28 @@ public class GoogleSync {
 		}
 		logInfo("Already at Google tempAlreadyKeptEvents: " + tempAlreadyKeptEvents.size());
 		logInfo("Already at Google to be synced: " + tempCurrentGoogleEvents.size());
-		tempCurrentGoogleEvents.removeAll(tempAlreadyKeptEvents);
-		logInfo("Already at Google without kept: " + tempCurrentGoogleEvents.size());
 		for (Iterator<Event> iCurrent = tempCurrentGoogleEvents.iterator(); iCurrent.hasNext();) {
-			Event tempEvent = iCurrent.next();
-			if (tempDuplicateGoogleEvents.contains(tempEvent)) {
-				LOGGER.debug("Will be deleted below: {}", tempEvent);
+			Event tempCurrentGoogleEvent = iCurrent.next();
+			if (tempDuplicateGoogleEvents.contains(tempCurrentGoogleEvent)) {
+				LOGGER.info("Will be deleted below: {} as duplicate.", tempCurrentGoogleEvent);
 				continue;
 			}
 			boolean tempRemoved = false;
 			for (Iterator<Map.Entry<Event, Deadline>> iNew = tempNewEvents.entrySet().iterator(); iNew.hasNext();) {
 				Map.Entry<Event, Deadline> tempMapEntry = iNew.next();
 				Event tempNewEvent = tempMapEntry.getKey();
-				boolean tempSameId = isSameId(tempEvent, tempNewEvent);
-				if (tempSameId || isSame(tempEvent, tempNewEvent)) {
+				boolean tempSameId = isSameId(tempCurrentGoogleEvent, tempNewEvent);
+				if (tempSameId || isSame(tempCurrentGoogleEvent, tempNewEvent)) {
 					if (tempSameId) {
-						if (isUpdated(tempNewEvent, tempEvent)) {
-							Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
+						if (isUpdated(tempNewEvent, tempCurrentGoogleEvent)) {
+							Deadline tempDeadline = createDeadlineFromGoogleEvent(tempCurrentGoogleEvent);
 							logInfo("Add the updated values to from-google file "
 									+ tempDeadline.getTextWithoutRepeatingInfo());
 							aDoneSelectionListener.addNewDeadline(tempDeadline);
 						}
 					}
-					// Nothing to do, just keep both entries
+					LOGGER.info("Nothing to do, just keep both entries: tempNewEvent=" + shortInfo(tempNewEvent)
+							+ " tempCurrentGoogleEvent=" + shortInfo(tempCurrentGoogleEvent));
 					iCurrent.remove();
 					iNew.remove();
 					tempRemoved = true;
@@ -364,22 +363,22 @@ public class GoogleSync {
 			if (tempRemoved) {
 				continue;
 			}
-			EventDateTime tempStart = tempEvent.getStart();
-			String tempSummary = getSummary(tempEvent);
+			EventDateTime tempStart = tempCurrentGoogleEvent.getStart();
+			String tempSummary = getSummary(tempCurrentGoogleEvent);
 			DateTime tempLastSyncStarted = getLastSyncStarted();
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Do not add self generated files 
 				LOGGER.debug("Do not add self generated files " + tempSummary);
 				// e.g. when restarting deadline-reminder (tempLastSyncStarted == null)
 				// or when suspended more than one day
-			} else if (isManuallyCreatedEntry(tempLastSyncStarted, tempEvent)) {
+			} else if (isManuallyCreatedEntry(tempLastSyncStarted, tempCurrentGoogleEvent)) {
 				logInfo("Looks like it is a manual created event in Google=" + tempStart + " " + tempSummary);
-				Deadline tempDeadline = createDeadlineFromGoogleEvent(tempEvent);
+				Deadline tempDeadline = createDeadlineFromGoogleEvent(tempCurrentGoogleEvent);
 				if (tempDeadline.isWholeDayEvent()) {
-					if ("transparent".equals(tempEvent.getTransparency())) {
+					if ("transparent".equals(tempCurrentGoogleEvent.getTransparency())) {
 						// "transparent" will be ticked as done on next sync.
 						logInfo("Make the wholeday event not checked: " + tempSummary);
-						googleUpdateEventTransparency(client, tempDeadlineCalendarId, tempEvent, "opaque");
+						googleUpdateEventTransparency(client, tempDeadlineCalendarId, tempCurrentGoogleEvent, "opaque");
 					}
 				}
 				// tempNewEvents needs not to be updated as event is already at google.
@@ -389,10 +388,11 @@ public class GoogleSync {
 				continue;
 			}
 
-			logInfo("No matching current event found for Google=" + tempStart + " " + tempSummary + " " + tempEvent);
+			logInfo("No matching current event found for Google=" + tempStart + " " + tempSummary + " "
+					+ tempCurrentGoogleEvent);
 		}
 		logInfo("Already at Google to be deleted: " + tempCurrentGoogleEvents.size());
-		logInfo("To be added to Google (later): " + tempNewEvents.size());
+		logInfo("To be added to Google: " + tempNewEvents.size());
 		for (Event tempEvent : tempNewEvents.keySet()) {
 			googleInsertEvent(client, tempDeadlineCalendarId, tempEvent);
 			slowDown();
@@ -406,6 +406,21 @@ public class GoogleSync {
 		return true;
 	}
 
+	private String shortInfo(Event aNewEvent) {
+		EventDateTime tempStart = aNewEvent.getStart();
+		DateTime tempDate = tempStart.getDate();
+		String tempString = aNewEvent.getId() + " ";
+		if (tempDate != null) {
+			tempString += DATE_FORMAT.format(tempDate.getValue());
+		}
+		DateTime tempDateTime = tempStart.getDateTime();
+		if (tempDateTime != null) {
+			tempString += DATE_FORMAT.format(tempDateTime.getValue());
+		}
+		tempString += " " + getSummary(aNewEvent);
+		return tempString;
+	}
+
 	private void googleDeleteEvent(com.google.api.services.calendar.Calendar aClient, String aDeadlineCalendarId,
 			Event anEvent) throws IOException, GoogleJsonResponseException {
 		String tempSummary = getSummary(anEvent);
@@ -413,8 +428,8 @@ public class GoogleSync {
 
 		Delete tempDelete = aClient.events().delete(aDeadlineCalendarId, anEvent.getId());
 		try {
+			logInfo("Delete " + tempStart + " " + tempSummary + " " + anEvent);
 			config(tempDelete).execute();
-			logInfo("Deleted " + tempStart + " " + tempSummary + " " + anEvent);
 		} catch (GoogleJsonResponseException e) {
 			logError("Error deleting " + tempStart + " " + getSummary(anEvent) + " " + anEvent, e);
 			throw e;
