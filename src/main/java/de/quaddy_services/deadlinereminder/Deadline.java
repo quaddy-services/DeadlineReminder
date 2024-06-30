@@ -32,6 +32,10 @@ public class Deadline {
 	private String textWithoutRepeatingInfo;
 	private String id;
 	private boolean deleted;
+	/**
+	 * is from termin-added-by-google.txt
+	 */
+	private boolean addedByGoogle;
 
 	public Date getWhen() {
 		return when;
@@ -296,7 +300,14 @@ public class Deadline {
 	}
 
 	public boolean isDeleted() {
-		// TODO Auto-generated method stub
 		return deleted;
+	}
+
+	public void setAddedByGoogle(boolean anAddedByGoogle) {
+		addedByGoogle = anAddedByGoogle;
+	}
+
+	public boolean isAddedByGoogle() {
+		return addedByGoogle;
 	}
 }

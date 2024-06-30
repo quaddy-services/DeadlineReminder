@@ -65,6 +65,9 @@ public class FileStorage implements Storage {
 		synchronized (MONITOR) {
 			try {
 				List<Deadline> tempDeadlinesFromGoogle = readDeadlines(to, TERMIN_GOOGLE_ADDED_TXT);
+				for (Deadline tempDeadlineFromGoogle : tempDeadlinesFromGoogle) {
+					tempDeadlineFromGoogle.setAddedByGoogle(true);
+				}
 				List<Deadline> tempDeadlinesFromTerminTxt = readDeadlines(to, TERMIN_TXT);
 
 				List<Deadline> tempDoneDeadlines = readDeadlines(null, TERMIN_DONE_TXT);

@@ -264,7 +264,11 @@ public class GoogleSync {
 		logInfo("Already at Google (including history): " + tempCurrentGoogleEvents.size());
 
 		Map<Event, Deadline> tempNewEvents = new IdentityHashMap<>();
+		Set<String> tempManuallyAddedByGoogleIds = new HashSet<>();
 		for (Deadline tempDeadline : aOpenDeadlines) {
+			if (tempDeadline.isAddedByGoogle()) {
+				tempManuallyAddedByGoogleIds.add(tempDeadline.getId());
+			}
 			if (tempDeadline.getWhen().after(tempTooFarAway.getTime())) {
 				continue;
 			}
@@ -371,7 +375,7 @@ public class GoogleSync {
 				LOGGER.debug("Do not add self generated files " + tempSummary);
 				// e.g. when restarting deadline-reminder (tempLastSyncStarted == null)
 				// or when suspended more than one day
-			} else if (isManuallyCreatedEntry(tempLastSyncStarted, tempCurrentGoogleEvent)) {
+			} else if (isManuallyCreatedEntry(tempLastSyncStarted, tempCurrentGoogleEvent,tempManuallyAddedByGoogleIds)) {
 				logInfo("Looks like it is a manual created event in Google=" + tempStart + " " + tempSummary);
 				Deadline tempDeadline = createDeadlineFromGoogleEvent(tempCurrentGoogleEvent);
 				if (tempDeadline.isWholeDayEvent()) {
@@ -397,6 +401,7 @@ public class GoogleSync {
 			googleInsertEvent(client, tempDeadlineCalendarId, tempEvent);
 			slowDown();
 		}
+		
 		logInfo("Now delete: " + tempCurrentGoogleEvents.size());
 		for (Event tempEvent : tempCurrentGoogleEvents) {
 			googleDeleteEvent(client, tempDeadlineCalendarId, tempEvent);
@@ -560,7 +565,11 @@ public class GoogleSync {
 		return tempSummary;
 	}
 
-	private boolean isManuallyCreatedEntry(DateTime aLastSyncStarted, Event aEvent) {
+	private boolean isManuallyCreatedEntry(DateTime aLastSyncStarted, Event aEvent, Set<String> aManuallyAddedByGoogleIds) {
+		if (aManuallyAddedByGoogleIds.contains(aEvent.getId())) {
+			// read by de.quaddy_services.deadlinereminder.file.FileStorage.TERMIN_GOOGLE_ADDED_TXT
+			return true;
+		}
 		ExtendedProperties tempExtendedProperties = aEvent.getExtendedProperties();
 		if (tempExtendedProperties != null) {
 			String tempTextWithoutRepeatingInfo = (String) tempExtendedProperties.get("TextWithoutRepeatingInfo");
@@ -868,6 +877,7 @@ public class GoogleSync {
 		}
 		tempDeadline.setWhen(tempWhen);
 		tempDeadline.setId(anEvent.getId());
+		tempDeadline.setAddedByGoogle(true);
 		return tempDeadline;
 	}
 
