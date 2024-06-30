@@ -50,7 +50,7 @@ public class Deadline {
 	}
 
 	public void setInfo(String info) {
-		this.info = info;
+		this.info = info.trim();
 	}
 
 	public boolean isDone() {
@@ -101,7 +101,7 @@ public class Deadline {
 			if (other.info != null) {
 				return false;
 			}
-		} else if (other.info != null && !info.trim().equals(other.info.trim())) {
+		} else if (other.info != null) {
 			return false;
 		}
 		if (when == null) {
