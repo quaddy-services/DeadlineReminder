@@ -64,7 +64,8 @@ public class FileStorage implements Storage {
 	public List<Deadline> getOpenDeadlines(Date to) {
 		synchronized (MONITOR) {
 			try {
-				List<Deadline> tempDeadlinesFromGoogle = readDeadlines(to, TERMIN_GOOGLE_ADDED_TXT);
+				// Read all google deadlines
+				List<Deadline> tempDeadlinesFromGoogle = readDeadlines(null, TERMIN_GOOGLE_ADDED_TXT);
 				for (Deadline tempDeadlineFromGoogle : tempDeadlinesFromGoogle) {
 					tempDeadlineFromGoogle.setAddedByGoogle(true);
 				}
@@ -97,16 +98,20 @@ public class FileStorage implements Storage {
 		while (null != (tempLine = tempReader.readLine())) {
 			List<Deadline> tempDeadlines = parseDeadline(tempLine, to != null);
 			for (Deadline tempDeadline : tempDeadlines) {
-				if (tempDeadline != null && (to == null || to.after(tempDeadline.getWhen()))) {
-					String tempId = tempDeadline.getId();
-					if (tempId != null) {
-						Deadline tempPreviouslyAdded = tempIdsAdded.put(tempId, tempDeadline);
-						if (tempPreviouslyAdded != null) {
-							// Remove the outdated one (termin-added-from-google is appended always)
-							tempMatchingDeadlines.remove(tempPreviouslyAdded);
+				if (tempDeadline != null) {
+					if (to != null && to.before(tempDeadline.getWhen())) {
+						LOGGER.debug("Skip tooFarAway from " + tempFileName + " " + tempDeadline.getInfo());
+					} else {
+						String tempId = tempDeadline.getId();
+						if (tempId != null) {
+							Deadline tempPreviouslyAdded = tempIdsAdded.put(tempId, tempDeadline);
+							if (tempPreviouslyAdded != null) {
+								// Remove the outdated one (termin-added-from-google is appended always)
+								tempMatchingDeadlines.remove(tempPreviouslyAdded);
+							}
 						}
+						tempMatchingDeadlines.add(tempDeadline);
 					}
-					tempMatchingDeadlines.add(tempDeadline);
 				}
 			}
 		}
@@ -116,8 +121,9 @@ public class FileStorage implements Storage {
 	}
 
 	/**
-	 * While adding the IDs it may be non-deleted or deleted.
-	 * With tempPreviouslyAdded above we found the latest state of google event.
+	 * While adding the IDs it may be non-deleted or deleted. With
+	 * tempPreviouslyAdded above we found the latest state of google event.
+	 * 
 	 * @param aMatchingDeadlines
 	 */
 	private void removeAllDeleted(List<Deadline> aMatchingDeadlines) {
@@ -381,7 +387,8 @@ public class FileStorage implements Storage {
 				}
 			}
 			if (tempDones.size() > 0) {
-				try (PrintWriter tempDone = new PrintWriter(createFileWriter(new File(getDirectory() + "/" + TERMIN_DONE_TXT)))) {
+				try (PrintWriter tempDone = new PrintWriter(
+						createFileWriter(new File(getDirectory() + "/" + TERMIN_DONE_TXT)))) {
 					tempDone.println(INFO_PREFIX + new Date());
 					for (Deadline tempDeadline : tempDones) {
 						StringBuilder tempDeadlineText = new StringBuilder();

@@ -433,7 +433,7 @@ public class GoogleSync {
 
 		Delete tempDelete = aClient.events().delete(aDeadlineCalendarId, anEvent.getId());
 		try {
-			logInfo("Delete " + tempStart + " " + tempSummary + " " + anEvent);
+			logInfo("googleDeleteEvent " + tempStart + " " + tempSummary + " " + anEvent);
 			config(tempDelete).execute();
 		} catch (GoogleJsonResponseException e) {
 			logError("Error deleting " + tempStart + " " + getSummary(anEvent) + " " + anEvent, e);
