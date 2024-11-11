@@ -61,13 +61,49 @@ public class Deadline {
 		this.done = done;
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Object#toString()
-	 */
 	@Override
 	public String toString() {
-		return "Deadline [when=" + when + ", info=" + info + ", done=" + done + ", repeating=" + repeating + ", textWithoutRepeatingInfo="
-				+ textWithoutRepeatingInfo + "]";
+		StringBuilder builder = new StringBuilder();
+		builder.append("Deadline [");
+		if (when != null) {
+			builder.append("when=");
+			builder.append(when);
+			builder.append(", ");
+		}
+		if (whenEndTime != null) {
+			builder.append("whenEndTime=");
+			builder.append(whenEndTime);
+			builder.append(", ");
+		}
+		if (info != null) {
+			builder.append("info=");
+			builder.append(info);
+			builder.append(", ");
+		}
+		builder.append("done=");
+		builder.append(done);
+		builder.append(", ");
+		if (repeating != null) {
+			builder.append("repeating=");
+			builder.append(repeating);
+			builder.append(", ");
+		}
+		if (textWithoutRepeatingInfo != null) {
+			builder.append("textWithoutRepeatingInfo=");
+			builder.append(textWithoutRepeatingInfo);
+			builder.append(", ");
+		}
+		if (id != null) {
+			builder.append("id=");
+			builder.append(id);
+			builder.append(", ");
+		}
+		builder.append("deleted=");
+		builder.append(deleted);
+		builder.append(", addedByGoogle=");
+		builder.append(addedByGoogle);
+		builder.append("]");
+		return builder.toString();
 	}
 
 	/* (non-Javadoc)

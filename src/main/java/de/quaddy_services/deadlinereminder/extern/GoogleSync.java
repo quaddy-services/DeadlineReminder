@@ -17,6 +17,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -167,7 +168,13 @@ public class GoogleSync {
 				LOGGER.info("removeDeadlines: " + aDeadlines);
 			}
 		};
-		new GoogleSync().push(tempDeadlines, tempDoneSelectionListener);
+		GoogleSync googleSync = new GoogleSync() {
+			@Override
+			void setLastSyncStarted(DateTime aDateTime) {
+				LOGGER.info("Skip setLastSyncStarted aDateTime=" + aDateTime);
+			}
+		};
+		googleSync.push(tempDeadlines, tempDoneSelectionListener);
 		System.exit(0);
 	}
 
@@ -191,7 +198,7 @@ public class GoogleSync {
 		// set up global Calendar instance
 		com.google.api.services.calendar.Calendar client = new com.google.api.services.calendar.Calendar.Builder(
 				HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName("DeadlineReminder/1.0")
-						.setHttpRequestInitializer(credential).build();
+				.setHttpRequestInitializer(credential).build();
 
 		return push(client, aOpenDeadlines, aDoneSelectionListener);
 	}
@@ -264,10 +271,10 @@ public class GoogleSync {
 		logInfo("Already at Google (including history): " + tempCurrentGoogleEvents.size());
 
 		Map<Event, Deadline> tempNewEvents = new IdentityHashMap<>();
-		Set<String> tempManuallyAddedByGoogleIds = new HashSet<>();
+		Map<String, Deadline> tempManuallyAddedByGoogleIds = new HashMap<>();
 		for (Deadline tempDeadline : aOpenDeadlines) {
 			if (tempDeadline.isAddedByGoogle()) {
-				tempManuallyAddedByGoogleIds.add(tempDeadline.getId());
+				tempManuallyAddedByGoogleIds.put(tempDeadline.getId(), tempDeadline);
 			}
 			if (tempDeadline.getWhen().after(tempTooFarAway.getTime())) {
 				continue;
@@ -371,7 +378,7 @@ public class GoogleSync {
 			String tempSummary = getSummary(tempCurrentGoogleEvent);
 			DateTime tempLastSyncStarted = getLastSyncStarted();
 			if (tempSummary.startsWith(OVERDUE_MARKER)) {
-				// Do not add self generated files 
+				// Do not add self generated files
 				LOGGER.debug("Do not add self generated files " + tempSummary);
 				// e.g. when restarting deadline-reminder (tempLastSyncStarted == null)
 				// or when suspended more than one day
@@ -385,9 +392,14 @@ public class GoogleSync {
 						googleUpdateEventTransparency(client, tempDeadlineCalendarId, tempCurrentGoogleEvent, "opaque");
 					}
 				}
-				// tempNewEvents needs not to be updated as event is already at google.
-				// and next time it will be detected as normally added one.
-				aDoneSelectionListener.addNewDeadline(tempDeadline);
+				Deadline tempManuallyAddedByGoogle = tempManuallyAddedByGoogleIds.get(tempCurrentGoogleEvent.getId());
+				if (!tempDeadline.equals(tempManuallyAddedByGoogle)) {
+					// Append new entry in the termin-added-by-google.txt
+					// (for e.g. description change)
+					// tempNewEvents needs not to be updated as event is already at google.
+					// and next time it will be detected as normally added one.
+					aDoneSelectionListener.addNewDeadline(tempDeadline);
+				}
 				iCurrent.remove();
 				continue;
 			}
@@ -401,7 +413,7 @@ public class GoogleSync {
 			googleInsertEvent(client, tempDeadlineCalendarId, tempEvent);
 			slowDown();
 		}
-		
+
 		logInfo("Now delete: " + tempCurrentGoogleEvents.size());
 		for (Event tempEvent : tempCurrentGoogleEvents) {
 			googleDeleteEvent(client, tempDeadlineCalendarId, tempEvent);
@@ -482,7 +494,8 @@ public class GoogleSync {
 		return false;
 	}
 
-	/** For better debugging (drop to frame) 
+	/**
+	 * For better debugging (drop to frame)
 	 */
 	private boolean isUpdated(Event aFileEvent, Event aEvent) {
 		if (isUpdateDetection(aFileEvent, aEvent)) {
@@ -565,8 +578,8 @@ public class GoogleSync {
 		return tempSummary;
 	}
 
-	private boolean isManuallyCreatedEntry(DateTime aLastSyncStarted, Event aEvent, Set<String> aManuallyAddedByGoogleIds) {
-		if (aManuallyAddedByGoogleIds.contains(aEvent.getId())) {
+	private boolean isManuallyCreatedEntry(DateTime aLastSyncStarted, Event aEvent, Map<String,Deadline> aManuallyAddedByGoogleIds) {
+		if (aManuallyAddedByGoogleIds.containsKey(aEvent.getId())) {
 			// read by de.quaddy_services.deadlinereminder.file.FileStorage.TERMIN_GOOGLE_ADDED_TXT
 			return true;
 		}
@@ -593,6 +606,13 @@ public class GoogleSync {
 		// Give Google some time to sync the global persistence stores
 		long tempLastSyncStartedMsCompare = tempLastSyncStartedMs - 30000;
 		if (tempLastSyncStartedMsCompare < tempCreatedMs) {
+			logInfo("Event "+tempSummary+" Created " + new Date(tempCreatedMs) + " after " + new Date(tempLastSyncStartedMsCompare));
+			return true;
+		}
+		DateTime tempUpdated = aEvent.getUpdated();
+		long tempUpdatedMs = tempUpdated.getValue();
+		if (tempLastSyncStartedMsCompare < tempUpdatedMs) {
+			logInfo("Event "+tempSummary+" Updated " + new Date(tempUpdatedMs) + " after " + new Date(tempLastSyncStartedMsCompare));
 			return true;
 		}
 		return false;
@@ -601,7 +621,7 @@ public class GoogleSync {
 	/**
 	 *
 	 */
-	private void setLastSyncStarted(DateTime aDateTime) {
+	void setLastSyncStarted(DateTime aDateTime) {
 		lastSyncStarted = aDateTime;
 		File tempLastSyncFile = new FileStorage().getLastSyncFile();
 		try (BufferedWriter tempOut = new BufferedWriter(new FileWriter(tempLastSyncFile))) {
@@ -799,7 +819,8 @@ public class GoogleSync {
 		event.setSummary(tempText.trim());
 		if (tempIsWholeDayEvent) {
 			String tempDateOnlyString = new java.sql.Date(tempStartDateTime.getTime()).toString();
-			event.setStart(new EventDateTime().setDate(new DateTime(tempDateOnlyString))); // force DateTime.dateOnly=true
+			event.setStart(new EventDateTime().setDate(new DateTime(tempDateOnlyString))); // force
+																							// DateTime.dateOnly=true
 			Calendar tempEndDateTimeCal = Calendar.getInstance();
 			tempEndDateTimeCal.setTime(tempStartDateTime);
 			tempEndDateTimeCal.setTimeZone(timeZone);
@@ -807,7 +828,7 @@ public class GoogleSync {
 			tempEndDateTimeCal.add(Calendar.HOUR_OF_DAY, 2); // add 2 hours to ensure with DST it gives next date.
 			tempDateOnlyString = new java.sql.Date(tempEndDateTimeCal.getTimeInMillis()).toString();
 			event.setEnd(new EventDateTime().setDate(new DateTime(tempDateOnlyString)));
-			// event.setEnd(null); //  "message" : "Missing end time.",
+			// event.setEnd(null); // "message" : "Missing end time.",
 		} else {
 			DateTime start = new DateTime(tempStartDateTime, timeZone);
 			event.setStart(new EventDateTime().setDateTime(start));
@@ -815,7 +836,7 @@ public class GoogleSync {
 			Date tempWhenEndDateTime;
 			tempWhenEndDateTime = aDeadline.getWhenEndTime();
 			if (tempWhenEndDateTime == null) {
-				//event.setEnd(null); //  "message" : "Missing end time.",
+				// event.setEnd(null); // "message" : "Missing end time.",
 				tempWhenEndDateTime = aDeadline.getWhen();
 			}
 			Date endDate = new Date(tempWhenEndDateTime.getTime());
@@ -848,6 +869,7 @@ public class GoogleSync {
 	private Deadline createDeadlineFromGoogleEvent(Event anEvent) {
 		String tempSummary = getSummary(anEvent);
 		Deadline tempDeadline = new Deadline();
+		tempDeadline.setInfo(tempSummary);
 		ExtendedProperties tempExtendedProperties = anEvent.getExtendedProperties();
 		if (tempExtendedProperties != null) {
 			String tempTextWithoutRepeatingInfo = (String) tempExtendedProperties.get("TextWithoutRepeatingInfo");
