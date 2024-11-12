@@ -363,7 +363,7 @@ public class GoogleSync {
 							aDoneSelectionListener.addNewDeadline(tempDeadline);
 						}
 					}
-					LOGGER.info("Nothing to do, just keep both entries: tempNewEvent=" + shortInfo(tempNewEvent)
+					LOGGER.debug("Nothing to do, just keep both entries: tempNewEvent=" + shortInfo(tempNewEvent)
 							+ " tempCurrentGoogleEvent=" + shortInfo(tempCurrentGoogleEvent));
 					iCurrent.remove();
 					iNew.remove();
