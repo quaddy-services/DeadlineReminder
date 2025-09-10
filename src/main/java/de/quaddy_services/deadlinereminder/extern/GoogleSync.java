@@ -315,7 +315,11 @@ public class GoogleSync {
 			EventDateTime tempStart = tempGoogleEvent.getStart();
 			DateTime tempDate = tempStart.getDate();
 			String tempSummary = getSummary(tempGoogleEvent);
-			if (tempSummary.startsWith(OVERDUE_MARKER)) {
+			if (tempSummary == null || tempSummary.trim().length()==0) {
+				// Keep unknown event.
+				iCurrent.remove();
+				continue;
+			} else if (tempSummary.startsWith(OVERDUE_MARKER)) {
 				// Overdue events are deleted and recreated next day. The original event is
 				// already kept in calendar.
 				Event tempSameEvent = getSameEvent(tempNewEvents.keySet(), tempGoogleEvent);
@@ -921,6 +925,11 @@ public class GoogleSync {
 
 	private String getSummary(Event anEvent) {
 		String tempGoogleSummary = anEvent.getSummary();
+		if (tempGoogleSummary == null) {
+			// (Kein Titel)
+			logWarn("Summary is null for anEvent="+anEvent);
+			return null;
+		}
 		String tempOneLineSummary = tempGoogleSummary.replace('\r', ' ').replace('\n', ' ').replace('\t', ' ');
 		String tempTrimmedSummary = tempOneLineSummary.trim();
 		return tempTrimmedSummary;
